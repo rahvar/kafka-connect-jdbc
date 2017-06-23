@@ -124,7 +124,7 @@ public class JdbcSourceTask extends SourceTask {
     log.info("Default Timestamp Column: "+timestampColumn);
     for (String tableOrQuery : tablesOrQuery) {
       String tableMode = mode;
-      try{
+      try {
         tableMode = config.getString(tableOrQuery+"."+JdbcSourceTaskConfig.MODE_CONFIG);
       }
       catch (Exception e){
@@ -138,7 +138,7 @@ public class JdbcSourceTask extends SourceTask {
       try {
         String defaultAnonymizer = config.getString(JdbcSourceTaskConfig.ANONYMIZE+".default");
         String anonymizeKey = tableOrQuery +"."+JdbcSourceTaskConfig.ANONYMIZE +".column.name";
-        log.info("anonymize key: " + anonymizeKey);
+
         String colsToAnonymizeconfig = config.getString(anonymizeKey);
         ArrayList<String> anonymizeList = new  ArrayList<String>(Arrays.asList(colsToAnonymizeconfig.split(",")));
         anonymizeMap = new HashMap<String,String>();
@@ -150,8 +150,7 @@ public class JdbcSourceTask extends SourceTask {
           }
         }
       } catch (Exception e) {
-        log.info("Anonymization information not found.");
-        e.printStackTrace();
+        log.info("Anonymization information not found for: " + tableOrQuery);
       }
 
       final Map<String, String> partition;

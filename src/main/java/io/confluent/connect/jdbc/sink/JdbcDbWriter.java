@@ -28,7 +28,12 @@ import java.util.Map;
 import io.confluent.connect.jdbc.sink.dialect.DbDialect;
 import io.confluent.connect.jdbc.util.CachedConnectionProvider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JdbcDbWriter {
+
+  private static final Logger log = LoggerFactory.getLogger(JdbcDbWriter.class);
 
   private final JdbcSinkConfig config;
   private final DbDialect dbDialect;
@@ -57,6 +62,9 @@ public class JdbcDbWriter {
       BufferedRecords buffer = bufferByTable.get(table);
       if (buffer == null) {
         buffer = new BufferedRecords(config, table, dbDialect, dbStructure, connection);
+//        if (table.equals("customer")) {
+//          log.info("S: " + record.toString());
+//        }
         bufferByTable.put(table, buffer);
       }
       buffer.add(record);

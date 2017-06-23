@@ -66,7 +66,7 @@ public class PostgreSqlDialect extends DbDialect {
       case STRING:
         return "TEXT";
       case BYTES:
-        return "BLOB";
+        return "BYTEA";
     }
     return super.getSqlType(schemaName, parameters, type);
   }
@@ -82,17 +82,22 @@ public class PostgreSqlDialect extends DbDialect {
     nCopiesToBuilder(builder, ",", "?", cols.size() + keyCols.size());
     builder.append(") ON CONFLICT (");
     joinToBuilder(builder, ",", keyCols, escaper());
-    builder.append(") DO UPDATE SET ");
+    if((cols.size()+keyCols.size())!=keyCols.size()) {
+      builder.append(") DO UPDATE SET ");
+    }
+    else{
+      builder.append(") DO NOTHING");
+    }
     joinToBuilder(
-        builder,
-        ",",
-        cols,
-        new StringBuilderUtil.Transform<String>() {
-          @Override
-          public void apply(StringBuilder builder, String col) {
-            builder.append(escaped(col)).append("=EXCLUDED.").append(escaped(col));
-          }
-        }
+            builder,
+            ",",
+            cols,
+            new StringBuilderUtil.Transform<String>() {
+              @Override
+              public void apply(StringBuilder builder, String col) {
+                builder.append(escaped(col)).append("=EXCLUDED.").append(escaped(col));
+              }
+            }
     );
     return builder.toString();
   }
