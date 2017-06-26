@@ -6,9 +6,7 @@ package io.confluent.connect.jdbc.source;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -22,7 +20,7 @@ public class DataTransform implements Transform {
 
     public String transformString(String value, String transformer) {
         String hashtext = null;
-        if (value==null && !value.trim().equals("")) {
+        if (value==null || value.trim().equals("")) {
             return value;
         }
         try {
@@ -38,13 +36,14 @@ public class DataTransform implements Transform {
             KeyStore.ProtectionParameter protParam =
                     new KeyStore.PasswordProtection(password);
             fis.close();
-            String secret = ks.getEntry("anonymizeSKey",protParam).toString();
+
+            KeyStore.SecretKeyEntry secret = (KeyStore.SecretKeyEntry)ks.getEntry("anonymizeSKey",protParam);
 
             String message = value;
 
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
-            sha256_HMAC.init(secret_key);
+
+            sha256_HMAC.init(secret.getSecretKey());
 
             String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.getBytes()));
 
@@ -53,7 +52,7 @@ public class DataTransform implements Transform {
 //            hashtext=value;
 //            MessageDigest m = MessageDigest.getInstance("MD5");
 //            if (value==null) {
-//                return hashtext;
+//                return value;
 //            }
 //            m.update(value.getBytes());
 //            byte[] digest = m.digest();
