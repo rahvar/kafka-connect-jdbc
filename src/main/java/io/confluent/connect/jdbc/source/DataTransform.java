@@ -22,6 +22,9 @@ public class DataTransform implements Transform {
 
     public String transformString(String value, String transformer) {
         String hashtext = null;
+        if (value==null && !value.trim().equals("")) {
+            return value;
+        }
         try {
             KeyStore ks = KeyStore.getInstance("JCEKS");
 
@@ -44,9 +47,9 @@ public class DataTransform implements Transform {
             sha256_HMAC.init(secret_key);
 
             String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.getBytes()));
-            System.out.println(hash);
+
             hashtext = hash;
-            log.info("hashtext: " + hashtext);
+
 //            hashtext=value;
 //            MessageDigest m = MessageDigest.getInstance("MD5");
 //            if (value==null) {
@@ -60,7 +63,6 @@ public class DataTransform implements Transform {
 //            while(hashtext.length() < 32 ){
 //                hashtext = "0"+hashtext;
 //            }
-
         } catch (NoSuchAlgorithmException e) {
             log.info("Hashing failed");
             e.printStackTrace();

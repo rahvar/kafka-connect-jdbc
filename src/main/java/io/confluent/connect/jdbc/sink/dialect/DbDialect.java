@@ -99,10 +99,8 @@ public abstract class DbDialect {
       System.out.println("Connected to database");
 
       ResultSet results = getEnumsFromSource(sourceConnection);
-      log.info("here1");
 //      log.info("results: " + results);
       while (results.next()) {
-        log.info("Results");
         String enumName = results.getString(1);
         String values = results.getString(2);
         createEnumsInSink(connection,enumName, values);
@@ -127,7 +125,6 @@ public abstract class DbDialect {
     String query = null;
     ResultSet rs = null;
     try {
-      log.info("enums from source");
       stmt = connection.createStatement();
       query = "SELECT t.typname, string_agg(''''||e.enumlabel||'''', ',' ORDER BY e.enumsortorder) AS enum_labels\n" +
               "FROM   pg_catalog.pg_type t \n" +
@@ -140,13 +137,11 @@ public abstract class DbDialect {
       log.info("Could not fetch enums");
       e.printStackTrace();
     }
-    log.info("Returning rs");
     return rs;
   }
 
   public void createEnumsInSink(Connection connection, String enumName, String values) {
     log.info("Enum name: " + enumName);
-    log.info("String: " + values);
     try {
       StringBuilder queryBuilder = new StringBuilder();
       Statement stmt = connection.createStatement();
@@ -158,18 +153,9 @@ public abstract class DbDialect {
               "    END IF;\n" +
               "END$$;";
 
-      log.info("Query is: " + query);
       stmt.executeUpdate(query);
-//      queryBuilder.append("CREATE TYPE ? AS ENUM (?)");
-//      PreparedStatement pstmt = connection.prepareStatement(queryBuilder.toString());
-//      pstmt.setString(1,enumName);
-//      pstmt.setString(2,values);
-//     create type mood AS ENUM ('sad', 'ok', 'happy');";
-//      pstmt.executeQuery();
-
     }
     catch (Exception e) {
-      log.info("");
       e.printStackTrace();
     }
     return;
