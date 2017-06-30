@@ -348,8 +348,30 @@ public class DataConverter {
       }
 
       case Types.ARRAY:
+        if(metadata.getColumnTypeName(col).equals("_text")) {
+          SchemaBuilder textArrayBuilder = PostgresTypes.TextArrayBuilder();
+          builder.field(fieldName, textArrayBuilder.optional().build());
+          break;
+        }
+        else if(metadata.getColumnTypeName(col).equals("_int4")){
+          SchemaBuilder intArrayBuilder = PostgresTypes.IntArrayBuilder();
+          builder.field(fieldName,intArrayBuilder.optional().build());
+          break;
+        }
+
       case Types.JAVA_OBJECT:
       case Types.OTHER:
+        if(metadata.getColumnTypeName(col).equals("jsonb")){
+
+          SchemaBuilder jsonBuilder = PostgresTypes.JsonbBuilder();
+          builder.field(fieldName,jsonBuilder.optional().build());
+          break;
+        }
+        else if(metadata.getColumnTypeName(col).equals("point")){
+          SchemaBuilder pointBuilder = PostgresTypes.PointBuilder();
+          builder.field(fieldName,pointBuilder.optional().build());
+          break;
+        }
       case Types.DISTINCT:
       case Types.STRUCT:
       case Types.REF:
@@ -555,6 +577,8 @@ public class DataConverter {
       }
 
       case Types.ARRAY:
+        colValue = resultSet.getString(col);
+        break;
       case Types.JAVA_OBJECT:
       case Types.OTHER:
       case Types.DISTINCT:
@@ -580,6 +604,7 @@ public class DataConverter {
       log.info("here");
       e.printStackTrace();
     }
+<<<<<<< HEAD
   }
 
   private static void convertJSONAnonymize(ResultSet resultSet, Struct struct, int col, String fieldName,
@@ -613,6 +638,41 @@ public class DataConverter {
     struct.put(fieldName, resultSet.wasNull() ? null : json.jsonString());
   }
 
+=======
+  }
+
+  private static void convertJSONAnonymize(ResultSet resultSet, Struct struct, int col, String fieldName,
+                                           String transformer, String anonymizeKey)
+          throws SQLException, IOException  {
+
+    String colValue = resultSet.getString(col);
+    DocumentContext json = JsonPath.parse(colValue);
+    try {
+
+      String allPaths = anonymizeKey.substring((fieldName+"#").length()+1,anonymizeKey.length()).replace("{","").replace("}","");
+      DataTransform dataT = new DataTransform();
+      String[] pathList = allPaths.split("&");
+//      ObjectMapper mapper = new ObjectMapper();
+//      String value = mapper.readTree(colValue).at(path).toString().replace("\"", "");
+//      JsonNode jsonNode = mapper.readTree(colValue);
+//      ((ObjectNode)jsonNode).replace("product", new TextNode(dataT.transformString(value,transformer)));
+
+      for (String path:pathList) {
+        String jayPath = "$." + path.replaceAll("/", ".");
+        String value = json.read(jayPath).toString().replaceAll("]", "")
+                .replaceAll("\\[", "")
+                .replaceAll("\"", "");
+        String anonymizedString = dataT.transformString(value, transformer);
+        json = json.set(jayPath, anonymizedString);
+      }
+    }
+    catch (Exception e) {
+
+    }
+    struct.put(fieldName, resultSet.wasNull() ? null : json.jsonString());
+  }
+
+>>>>>>> 5e2b642492d75ec8d3c2f2fe73ec0ae81949adcc
   private static void convertStringAnonymize(ResultSet resultSet, int col, int colType,
                                                  Struct struct, String fieldName, boolean mapNumerics,String transformer,
                                                  String columnTypeName, String anonymizeKey)

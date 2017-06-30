@@ -1,11 +1,11 @@
-# Build products
+ld products
 target/
 
 # IntelliJ data
 *.iml
 .idea/
 .ipr
-
+.gradle/*
 # Documentation build output
 /docs/_build
 
@@ -17,4 +17,8 @@ derby.log
 __test_database_*
 test.sqlite
 *.db-journal
+<<<<<<< HEAD
 *.gradle
+=======
+
+>>>>>>> 5e2b642492d75ec8d3c2f2fe73ec0ae81949adcc
