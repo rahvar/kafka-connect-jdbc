@@ -604,7 +604,6 @@ public class DataConverter {
       log.info("here");
       e.printStackTrace();
     }
-<<<<<<< HEAD
   }
 
   private static void convertJSONAnonymize(ResultSet resultSet, Struct struct, int col, String fieldName,
@@ -637,42 +636,6 @@ public class DataConverter {
     }
     struct.put(fieldName, resultSet.wasNull() ? null : json.jsonString());
   }
-
-=======
-  }
-
-  private static void convertJSONAnonymize(ResultSet resultSet, Struct struct, int col, String fieldName,
-                                           String transformer, String anonymizeKey)
-          throws SQLException, IOException  {
-
-    String colValue = resultSet.getString(col);
-    DocumentContext json = JsonPath.parse(colValue);
-    try {
-
-      String allPaths = anonymizeKey.substring((fieldName+"#").length()+1,anonymizeKey.length()).replace("{","").replace("}","");
-      DataTransform dataT = new DataTransform();
-      String[] pathList = allPaths.split("&");
-//      ObjectMapper mapper = new ObjectMapper();
-//      String value = mapper.readTree(colValue).at(path).toString().replace("\"", "");
-//      JsonNode jsonNode = mapper.readTree(colValue);
-//      ((ObjectNode)jsonNode).replace("product", new TextNode(dataT.transformString(value,transformer)));
-
-      for (String path:pathList) {
-        String jayPath = "$." + path.replaceAll("/", ".");
-        String value = json.read(jayPath).toString().replaceAll("]", "")
-                .replaceAll("\\[", "")
-                .replaceAll("\"", "");
-        String anonymizedString = dataT.transformString(value, transformer);
-        json = json.set(jayPath, anonymizedString);
-      }
-    }
-    catch (Exception e) {
-
-    }
-    struct.put(fieldName, resultSet.wasNull() ? null : json.jsonString());
-  }
-
->>>>>>> 5e2b642492d75ec8d3c2f2fe73ec0ae81949adcc
   private static void convertStringAnonymize(ResultSet resultSet, int col, int colType,
                                                  Struct struct, String fieldName, boolean mapNumerics,String transformer,
                                                  String columnTypeName, String anonymizeKey)
