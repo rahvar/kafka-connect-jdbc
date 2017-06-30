@@ -16,6 +16,7 @@
 
 package io.confluent.connect.jdbc.source;
 
+import javafx.geometry.Pos;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
@@ -325,27 +326,68 @@ public class DataConverter {
 
       case Types.ARRAY:
         if(metadata.getColumnTypeName(col).equals("_text")) {
+
           SchemaBuilder textArrayBuilder = PostgresTypes.TextArrayBuilder();
-          builder.field(fieldName, textArrayBuilder.optional().build());
+          if(optional) {
+            builder.field(fieldName, textArrayBuilder.optional().build());
+          }
+          else{
+            builder.field(fieldName, textArrayBuilder.build());
+          }
           break;
         }
         else if(metadata.getColumnTypeName(col).equals("_int4")){
           SchemaBuilder intArrayBuilder = PostgresTypes.IntArrayBuilder();
-          builder.field(fieldName,intArrayBuilder.optional().build());
+          if(optional) {
+            builder.field(fieldName, intArrayBuilder.optional().build());
+          }
+          else{
+            builder.field(fieldName, intArrayBuilder.build());
+          }
           break;
         }
 
       case Types.JAVA_OBJECT:
       case Types.OTHER:
         if(metadata.getColumnTypeName(col).equals("jsonb")){
-
           SchemaBuilder jsonBuilder = PostgresTypes.JsonbBuilder();
-          builder.field(fieldName,jsonBuilder.optional().build());
+          if(optional) {
+            builder.field(fieldName, jsonBuilder.optional().build());
+          }
+          else{
+            builder.field(fieldName, jsonBuilder.build());
+          }
           break;
         }
         else if(metadata.getColumnTypeName(col).equals("point")){
           SchemaBuilder pointBuilder = PostgresTypes.PointBuilder();
-          builder.field(fieldName,pointBuilder.optional().build());
+          if(optional) {
+            builder.field(fieldName, pointBuilder.optional().build());
+          }
+          else{
+            builder.field(fieldName, pointBuilder.build());
+          }
+          break;
+        }
+        else if(metadata.getColumnTypeName(col).equals("cidr")){
+
+          SchemaBuilder cidrBuilder = PostgresTypes.CidrBuilder();
+          if(optional) {
+            builder.field(fieldName, cidrBuilder.optional().build());
+          }
+          else{
+            builder.field(fieldName, cidrBuilder.build());
+          }
+          break;
+        }
+        else if(metadata.getColumnTypeName(col).equals("inet")){
+          SchemaBuilder inetBuilder = PostgresTypes.InetBuilder();
+          if(optional) {
+            builder.field(fieldName, inetBuilder.optional().build());
+          }
+          else{
+            builder.field(fieldName, inetBuilder.build());
+          }
           break;
         }
       case Types.DISTINCT:
