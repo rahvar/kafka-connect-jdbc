@@ -16,6 +16,8 @@
 
 package io.confluent.connect.jdbc.source;
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
@@ -35,7 +37,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.Map;
 
 import io.confluent.connect.jdbc.util.DateTimeUtils;
@@ -82,9 +83,32 @@ public class DataConverter {
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
-        if (anonymizeMap!=null && anonymizeMap.keySet().contains(metadata.getColumnLabel(col))) {
-          convertFieldValueAnonymize(resultSet, col, metadata.getColumnType(col), struct,
-                  metadata.getColumnLabel(col), mapNumerics,anonymizeMap.get(metadata.getColumnLabel(col)));
+        String fieldName = metadata.getColumnLabel(col);
+        String anonymizeKey = fieldName;
+
+        if (metadata.getColumnTypeName(col).equals("json")) {
+          Boolean anonymizeJSON = false;
+          if (anonymizeMap!=null) {
+            for (String key : anonymizeMap.keySet()) {
+              if (key.startsWith(fieldName)) {
+                anonymizeJSON = true;
+                anonymizeKey = key;
+              }
+            }
+          }
+          if (anonymizeJSON) {
+            convertJSONAnonymize(resultSet,struct,col,fieldName,anonymizeMap.get(metadata.getColumnLabel(col)),anonymizeKey);
+          }
+          else {
+            convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
+                    metadata.getColumnLabel(col), mapNumerics);
+          }
+
+        }
+        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(metadata.getColumnLabel(col))) {
+          convertStringAnonymize(resultSet, col, metadata.getColumnType(col), struct,
+                  metadata.getColumnLabel(col), mapNumerics,anonymizeMap.get(metadata.getColumnLabel(col)),
+                  metadata.getColumnTypeName(col),anonymizeKey);
         }
         else
           convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
@@ -573,11 +597,49 @@ public class DataConverter {
 
     // FIXME: Would passing in some extra info about the schema so we can get the Field by index
     // be faster than setting this by name?
-    struct.put(fieldName, resultSet.wasNull() ? null : colValue);
+    try {
+      struct.put(fieldName, resultSet.wasNull() ? null : colValue);
+    }
+    catch (Exception e) {
+      log.info("here");
+      e.printStackTrace();
+    }
   }
 
-  private static void convertFieldValueAnonymize(ResultSet resultSet, int col, int colType,
-                                        Struct struct, String fieldName, boolean mapNumerics,String transformer)
+  private static void convertJSONAnonymize(ResultSet resultSet, Struct struct, int col, String fieldName,
+                                           String transformer, String anonymizeKey)
+          throws SQLException, IOException  {
+
+    String colValue = resultSet.getString(col);
+    DocumentContext json = JsonPath.parse(colValue);
+    try {
+
+      String allPaths = anonymizeKey.substring((fieldName+"#").length()+1,anonymizeKey.length()).replace("{","").replace("}","");
+      DataTransform dataT = new DataTransform();
+      String[] pathList = allPaths.split("&");
+//      ObjectMapper mapper = new ObjectMapper();
+//      String value = mapper.readTree(colValue).at(path).toString().replace("\"", "");
+//      JsonNode jsonNode = mapper.readTree(colValue);
+//      ((ObjectNode)jsonNode).replace("product", new TextNode(dataT.transformString(value,transformer)));
+
+      for (String path:pathList) {
+        String jayPath = "$." + path.replaceAll("/", ".");
+        String value = json.read(jayPath).toString().replaceAll("]", "")
+                .replaceAll("\\[", "")
+                .replaceAll("\"", "");
+        String anonymizedString = dataT.transformString(value, transformer);
+        json = json.set(jayPath, anonymizedString);
+      }
+    }
+    catch (Exception e) {
+
+    }
+    struct.put(fieldName, resultSet.wasNull() ? null : json.jsonString());
+  }
+
+  private static void convertStringAnonymize(ResultSet resultSet, int col, int colType,
+                                                 Struct struct, String fieldName, boolean mapNumerics,String transformer,
+                                                 String columnTypeName, String anonymizeKey)
           throws SQLException, IOException {
     final Object colValue;
     switch (colType) {
