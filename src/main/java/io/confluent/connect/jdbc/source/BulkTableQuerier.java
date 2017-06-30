@@ -67,6 +67,7 @@ public class BulkTableQuerier extends TableQuerier {
 
   @Override
   protected ResultSet executeQuery() throws SQLException {
+    log.info("Final Bulk query is: " + stmt.toString()+"\n\n");
     return stmt.executeQuery();
   }
 

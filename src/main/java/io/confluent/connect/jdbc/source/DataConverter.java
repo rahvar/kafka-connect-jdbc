@@ -83,7 +83,6 @@ public class DataConverter {
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
         if (anonymizeMap!=null && anonymizeMap.keySet().contains(metadata.getColumnLabel(col))) {
-          log.info("About to anonymize");
           convertFieldValueAnonymize(resultSet, col, metadata.getColumnType(col), struct,
                   metadata.getColumnLabel(col), mapNumerics,anonymizeMap.get(metadata.getColumnLabel(col)));
         }
@@ -389,7 +388,6 @@ public class DataConverter {
          * elasticsearch-jdbc plugin for an example of how this is handled
          */
         //colValue = resultSet.getByte(col);
-
         colValue =  resultSet.getBoolean(col) ;
 
         break;
@@ -582,7 +580,6 @@ public class DataConverter {
                                         Struct struct, String fieldName, boolean mapNumerics,String transformer)
           throws SQLException, IOException {
     final Object colValue;
-    log.info("Col type is: " + colType);
     switch (colType) {
       case Types.NULL: {
         colValue = null;

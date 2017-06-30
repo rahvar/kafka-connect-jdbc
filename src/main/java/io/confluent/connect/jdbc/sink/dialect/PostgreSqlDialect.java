@@ -104,15 +104,15 @@ public class PostgreSqlDialect extends DbDialect {
       builder.append(") DO NOTHING");
     }
     joinToBuilder(
-        builder,
-        ",",
-        cols,
-        new StringBuilderUtil.Transform<String>() {
-          @Override
-          public void apply(StringBuilder builder, String col) {
-            builder.append(escaped(col)).append("=EXCLUDED.").append(escaped(col));
-          }
-        }
+            builder,
+            ",",
+            cols,
+            new StringBuilderUtil.Transform<String>() {
+              @Override
+              public void apply(StringBuilder builder, String col) {
+                builder.append(escaped(col)).append("=EXCLUDED.").append(escaped(col));
+              }
+            }
     );
     return builder.toString();
   }

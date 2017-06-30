@@ -68,14 +68,12 @@ public class BufferedRecords {
       try {
         tablePkFields = config.getList(tableName + ".pk.fields");
       }catch (Exception e){
-        log.info("Table specific pk fields not defined. Reverting to default");
       }
 
       JdbcSinkConfig.InsertMode tableInsertMode = config.insertMode;
       fieldsMetadata = FieldsMetadata.extract(tableName,config.pkMode, tablePkFields, config.fieldsWhitelist, currentSchemaPair);
       dbStructure.createOrAmendIfNecessary(config, connection, tableName, fieldsMetadata);
       final String insertSql = getInsertSql();
-      //log.debug("{} sql: {}", config.insertMode, insertSql);
       close();
       preparedStatement = connection.prepareStatement(insertSql);
       preparedStatementBinder = new PreparedStatementBinder(preparedStatement, config.pkMode, schemaPair, fieldsMetadata, tableInsertMode);
