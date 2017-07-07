@@ -115,7 +115,7 @@ public class BufferedRecords {
         totalUpdateCount += updateCount;
       }
     }
-    catch (Exception e) {
+    catch (Exception e){
       e.printStackTrace();
     }
 
