@@ -163,6 +163,7 @@ public class PreparedStatementBinder {
           case BOOLEAN:
             statement.setBoolean(index, (Boolean) value);
             break;
+          case ARRAY:
           case STRING:
 //            statement.setString(index, (String) value);
             statement.setObject(index,value, Types.OTHER);
