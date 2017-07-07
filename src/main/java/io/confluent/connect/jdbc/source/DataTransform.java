@@ -17,6 +17,7 @@ import org.apache.commons.codec.binary.Base64;
 
 public class DataTransform implements Transform {
 
+    private static final Logger log = LoggerFactory.getLogger(DataTransform.class);
     private static KeyStore.SecretKeyEntry secret;
 
     DataTransform() {
@@ -45,8 +46,6 @@ public class DataTransform implements Transform {
             e.printStackTrace();
         }
     }
-
-    private static final Logger log = LoggerFactory.getLogger(DataTransform.class);
 
     public String transformString(String value, String transformer) {
         String hashtext = null;
