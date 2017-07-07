@@ -155,7 +155,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
     }
     String queryString = builder.toString();
     log.debug("{} prepared SQL query: {}", this, queryString);
-    stmt = db.prepareStatement(queryString);
+    stmt = db.prepareStatement(queryString,ResultSet.TYPE_SCROLL_SENSITIVE,
+            ResultSet.CONCUR_UPDATABLE);
   }
 
   @Override

@@ -106,12 +106,17 @@ public class BufferedRecords {
     }
     int totalUpdateCount = 0;
     boolean successNoInfo = false;
-    for (int updateCount : preparedStatement.executeBatch()) {
-      if (updateCount == Statement.SUCCESS_NO_INFO) {
-        successNoInfo = true;
-        continue;
+    try {
+      for (int updateCount : preparedStatement.executeBatch()) {
+        if (updateCount == Statement.SUCCESS_NO_INFO) {
+          successNoInfo = true;
+          continue;
+        }
+        totalUpdateCount += updateCount;
       }
-      totalUpdateCount += updateCount;
+    }
+    catch (Exception e) {
+      e.printStackTrace();
     }
 
     if (totalUpdateCount != records.size() && !successNoInfo) {

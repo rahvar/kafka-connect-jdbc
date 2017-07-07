@@ -79,40 +79,39 @@ public class DataConverter {
                                      boolean mapNumerics, Map<String,String> anonymizeMap)
           throws SQLException {
 
+    DataTransform dataT = new DataTransform();
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
         String fieldName = metadata.getColumnLabel(col);
+        String colType = metadata.getColumnTypeName(col);
         String anonymizeKey = fieldName;
-
-        if (metadata.getColumnTypeName(col).equals("json")) {
-          Boolean anonymizeJSON = false;
+        Boolean anonymizeCol = false;
+        if (colType.equals("jsonb")) {
           if (anonymizeMap!=null) {
             for (String key : anonymizeMap.keySet()) {
               if (key.startsWith(fieldName)) {
-                anonymizeJSON = true;
+                anonymizeCol = true;
                 anonymizeKey = key;
+                break;
               }
             }
           }
-          if (anonymizeJSON) {
-            convertJSONAnonymize(resultSet,struct,col,fieldName,anonymizeMap.get(metadata.getColumnLabel(col)),anonymizeKey);
-          }
-          else {
-            convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
-                    metadata.getColumnLabel(col), mapNumerics);
-          }
+        }
+        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(fieldName)) {
+          anonymizeCol = true;
+        }
 
+        if (anonymizeCol) {
+          convertFieldAnonymize(resultSet, col, metadata.getColumnType(col), struct,
+                  fieldName, mapNumerics,anonymizeMap.get(anonymizeKey),
+                  colType,anonymizeKey,dataT);
         }
-        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(metadata.getColumnLabel(col))) {
-          convertStringAnonymize(resultSet, col, metadata.getColumnType(col), struct,
-                  metadata.getColumnLabel(col), mapNumerics,anonymizeMap.get(metadata.getColumnLabel(col)),
-                  metadata.getColumnTypeName(col),anonymizeKey);
-        }
-        else
+        else {
           convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
                   metadata.getColumnLabel(col), mapNumerics);
+        }
       } catch (IOException e) {
         log.warn("Ignoring record because processing failed:", e);
       } catch (SQLException e) {
@@ -350,12 +349,18 @@ public class DataConverter {
       case Types.ARRAY:
         if(metadata.getColumnTypeName(col).equals("_text")) {
           SchemaBuilder textArrayBuilder = PostgresTypes.TextArrayBuilder();
-          builder.field(fieldName, textArrayBuilder.optional().build());
+          if (optional) {
+            textArrayBuilder.optional();
+          }
+          builder.field(fieldName, textArrayBuilder.build());
           break;
         }
         else if(metadata.getColumnTypeName(col).equals("_int4")){
           SchemaBuilder intArrayBuilder = PostgresTypes.IntArrayBuilder();
-          builder.field(fieldName,intArrayBuilder.optional().build());
+          if (optional) {
+            intArrayBuilder.optional();
+          }
+          builder.field(fieldName,intArrayBuilder.build());
           break;
         }
 
@@ -601,44 +606,13 @@ public class DataConverter {
       struct.put(fieldName, resultSet.wasNull() ? null : colValue);
     }
     catch (Exception e) {
-      log.info("here");
       e.printStackTrace();
     }
   }
 
-  private static void convertJSONAnonymize(ResultSet resultSet, Struct struct, int col, String fieldName,
-                                           String transformer, String anonymizeKey)
-          throws SQLException, IOException  {
-
-    String colValue = resultSet.getString(col);
-    DocumentContext json = JsonPath.parse(colValue);
-    try {
-
-      String allPaths = anonymizeKey.substring((fieldName+"#").length()+1,anonymizeKey.length()).replace("{","").replace("}","");
-      DataTransform dataT = new DataTransform();
-      String[] pathList = allPaths.split("&");
-//      ObjectMapper mapper = new ObjectMapper();
-//      String value = mapper.readTree(colValue).at(path).toString().replace("\"", "");
-//      JsonNode jsonNode = mapper.readTree(colValue);
-//      ((ObjectNode)jsonNode).replace("product", new TextNode(dataT.transformString(value,transformer)));
-
-      for (String path:pathList) {
-        String jayPath = "$." + path.replaceAll("/", ".");
-        String value = json.read(jayPath).toString().replaceAll("]", "")
-                .replaceAll("\\[", "")
-                .replaceAll("\"", "");
-        String anonymizedString = dataT.transformString(value, transformer);
-        json = json.set(jayPath, anonymizedString);
-      }
-    }
-    catch (Exception e) {
-
-    }
-    struct.put(fieldName, resultSet.wasNull() ? null : json.jsonString());
-  }
-  private static void convertStringAnonymize(ResultSet resultSet, int col, int colType,
+  private static void convertFieldAnonymize(ResultSet resultSet, int col, int colType,
                                                  Struct struct, String fieldName, boolean mapNumerics,String transformer,
-                                                 String columnTypeName, String anonymizeKey)
+                                                 String columnTypeName, String anonymizeKey, DataTransform dataT)
           throws SQLException, IOException {
     final Object colValue;
     switch (colType) {
@@ -650,7 +624,6 @@ public class DataConverter {
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR: {
-          DataTransform dataT = new DataTransform();
           colValue = dataT.transformString(resultSet.getString(col),transformer);
         break;
       }
@@ -658,11 +631,24 @@ public class DataConverter {
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR: {
-        DataTransform dataT = new DataTransform();
         colValue = dataT.transformString(resultSet.getNString(col),transformer);
         break;
       }
 
+      case Types.ARRAY:
+        if(resultSet.getMetaData().getColumnTypeName(col).equals("_text")) {
+          colValue = dataT.transformStringArray(resultSet.getString(col),transformer);
+        }
+        else {
+          colValue = resultSet.getString(col);
+        }
+        break;
+
+      case Types.OTHER:
+        if(columnTypeName.equals("jsonb")) {
+          colValue = dataT.transformJSON(resultSet.getString(col),transformer,anonymizeKey, fieldName);
+          break;
+        }
       default: {
         return;
       }
