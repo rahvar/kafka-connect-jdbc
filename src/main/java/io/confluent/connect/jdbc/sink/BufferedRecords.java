@@ -121,7 +121,6 @@ public class BufferedRecords {
 
     if (totalUpdateCount != records.size() && !successNoInfo) {
       JdbcSinkConfig.InsertMode tableInsertMode = config.insertMode;
-
       switch (tableInsertMode) {
         case INSERT:
           throw new ConnectException(String.format("Update count (%d) did not sum up to total number of records inserted (%d)",

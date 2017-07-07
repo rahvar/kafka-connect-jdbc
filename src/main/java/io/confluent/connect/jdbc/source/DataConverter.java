@@ -72,17 +72,39 @@ public class DataConverter {
                                      boolean mapNumerics, Map<String,String> anonymizeMap)
           throws SQLException {
 
+    DataTransform dataT = new DataTransform();
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
-        if (anonymizeMap!=null && anonymizeMap.keySet().contains(metadata.getColumnLabel(col))) {
-          convertFieldValueAnonymize(resultSet, col, metadata.getColumnType(col), struct,
-                  metadata.getColumnLabel(col), mapNumerics,anonymizeMap.get(metadata.getColumnLabel(col)));
+        String fieldName = metadata.getColumnLabel(col);
+        String colType = metadata.getColumnTypeName(col);
+        String anonymizeKey = fieldName;
+        Boolean anonymizeCol = false;
+        if (colType.equals("jsonb")) {
+          if (anonymizeMap!=null) {
+            for (String key : anonymizeMap.keySet()) {
+              if (key.startsWith(fieldName)) {
+                anonymizeCol = true;
+                anonymizeKey = key;
+                break;
+              }
+            }
+          }
         }
-        else
+        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(fieldName)) {
+          anonymizeCol = true;
+        }
+
+        if (anonymizeCol) {
+          convertFieldAnonymize(resultSet, col, metadata.getColumnType(col), struct,
+                  fieldName, mapNumerics,anonymizeMap.get(anonymizeKey),
+                  colType,anonymizeKey,dataT);
+        }
+        else {
           convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
                   metadata.getColumnLabel(col), mapNumerics);
+        }
       } catch (IOException e) {
         log.warn("Ignoring record because processing failed:", e);
       } catch (SQLException e) {
@@ -614,11 +636,17 @@ public class DataConverter {
 
     // FIXME: Would passing in some extra info about the schema so we can get the Field by index
     // be faster than setting this by name?
-    struct.put(fieldName, resultSet.wasNull() ? null : colValue);
+    try {
+      struct.put(fieldName, resultSet.wasNull() ? null : colValue);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
-  private static void convertFieldValueAnonymize(ResultSet resultSet, int col, int colType,
-                                        Struct struct, String fieldName, boolean mapNumerics,String transformer)
+  private static void convertFieldAnonymize(ResultSet resultSet, int col, int colType,
+                                                 Struct struct, String fieldName, boolean mapNumerics,String transformer,
+                                                 String columnTypeName, String anonymizeKey, DataTransform dataT)
           throws SQLException, IOException {
     final Object colValue;
     switch (colType) {
@@ -630,7 +658,6 @@ public class DataConverter {
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR: {
-          DataTransform dataT = new DataTransform();
           colValue = dataT.transformString(resultSet.getString(col),transformer);
         break;
       }
@@ -638,14 +665,25 @@ public class DataConverter {
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR: {
-        DataTransform dataT = new DataTransform();
         colValue = dataT.transformString(resultSet.getNString(col),transformer);
         break;
       }
 
+      case Types.ARRAY:
+        if(resultSet.getMetaData().getColumnTypeName(col).equals("_text")) {
+          colValue = dataT.transformStringArray(resultSet.getString(col),transformer);
+        }
+        else {
+          colValue = resultSet.getString(col);
+        }
+        break;
+
+      case Types.OTHER:
+        if(columnTypeName.equals("jsonb")) {
+          colValue = dataT.transformJSON(resultSet.getString(col),transformer,anonymizeKey, fieldName);
+          break;
+        }
       default: {
-        // These are not currently supported, but we don't want to log something for every single
-        // record we translate. There will already be errors logged for the schema translation
         return;
       }
     }

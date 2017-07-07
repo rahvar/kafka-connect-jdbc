@@ -37,7 +37,7 @@ import static io.confluent.connect.jdbc.sink.dialect.StringBuilderUtil.nCopiesTo
 public class PostgreSqlDialect extends DbDialect {
 
   private static final Logger log = LoggerFactory.getLogger(PostgreSqlDialect.class);
-  public  PostgreSqlDialect() {
+  public PostgreSqlDialect() {
     super("\"", "\"");
   }
 
