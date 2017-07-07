@@ -29,15 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 
 import io.confluent.connect.jdbc.util.DateTimeUtils;
 
@@ -347,9 +340,15 @@ public class DataConverter {
           break;
         }
 
+
+        /*if (optional) {
+          builder.field(fieldName, Schema.OPTIONAL_BYTES_SCHEMA);
+        } else {
+          builder.field(fieldName, Schema.BYTES_SCHEMA);
+        }*/
       case Types.JAVA_OBJECT:
       case Types.OTHER:
-        if(metadata.getColumnTypeName(col).equals("jsonb")){
+        if(metadata.getColumnTypeName(col).equals("jsonb") || metadata.getColumnTypeName(col).equals("json") ){
           SchemaBuilder jsonBuilder = PostgresTypes.JsonbBuilder();
           if(optional) {
             builder.field(fieldName, jsonBuilder.optional().build());

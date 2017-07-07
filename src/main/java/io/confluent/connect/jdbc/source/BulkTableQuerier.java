@@ -56,11 +56,13 @@ public class BulkTableQuerier extends TableQuerier {
         String quoteString = JdbcUtils.getIdentifierQuoteString(db);
         String queryString = "SELECT * FROM " + JdbcUtils.quoteString(name, quoteString);
         log.debug("{} prepared SQL query: {}", this, queryString);
-        stmt = db.prepareStatement(queryString);
+        stmt = db.prepareStatement(queryString,ResultSet.TYPE_SCROLL_SENSITIVE,
+                ResultSet.CONCUR_UPDATABLE);
         break;
       case QUERY:
         log.debug("{} prepared SQL query: {}", this, query);
-        stmt = db.prepareStatement(query);
+        stmt = db.prepareStatement(query,ResultSet.TYPE_SCROLL_SENSITIVE,
+                ResultSet.CONCUR_UPDATABLE);
         break;
     }
   }
