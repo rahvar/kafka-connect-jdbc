@@ -92,8 +92,9 @@ public class DataTransform implements Transform {
     }
 
     public String transformStringArray(String value,String transformer) {
-        if (value == null) {
-            return null;
+
+        if (value == null || value.trim().equals("") || value.equals("{}")) {
+            return value;
         }
 
         String[] array = value.replace("{","").replace("}","").split(",");
@@ -106,6 +107,5 @@ public class DataTransform implements Transform {
         }
         strBuilder.replace(strBuilder.toString().lastIndexOf(","), strBuilder.toString().lastIndexOf(",") + 1, "}" );
         return strBuilder.toString();
-
     }
 }

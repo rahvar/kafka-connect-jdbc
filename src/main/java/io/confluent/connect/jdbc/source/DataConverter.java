@@ -16,7 +16,6 @@
 
 package io.confluent.connect.jdbc.source;
 
-import javafx.geometry.Pos;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
