@@ -50,14 +50,49 @@ public class DataConverter {
     return builder.build();
   }
 
+  public static Schema convertSchema(String tableName,ResultSetMetaData metadata,boolean mapNumerics,Set<String> pkResults)
+          throws SQLException {
+
+    SchemaBuilder builder = SchemaBuilder.struct().name(tableName);
+    for (int col = 1; col <= metadata.getColumnCount(); col++) {
+      String name = metadata.getColumnName(col);
+
+      if(pkResults.contains(name))
+          addFieldSchema(metadata, col, builder, mapNumerics);
+    }
+    return builder.build();
+
+  }
+
   public static Struct convertRecord(Schema schema, ResultSet resultSet, boolean mapNumerics)
       throws SQLException {
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
+
         convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
                           metadata.getColumnLabel(col), mapNumerics);
+      } catch (IOException e) {
+        log.warn("Ignoring record because processing failed:", e);
+      } catch (SQLException e) {
+        log.warn("Ignoring record due to SQL error:", e);
+      }
+    }
+    return struct;
+  }
+
+  public static Struct convertRecord(Schema schema, ResultSet resultSet, boolean mapNumerics,Set<String> pkResults)
+          throws SQLException {
+    ResultSetMetaData metadata = resultSet.getMetaData();
+    Struct struct = new Struct(schema);
+    for (int col = 1; col <= metadata.getColumnCount(); col++) {
+      try {
+
+        if(pkResults.contains(metadata.getColumnName(col))) {
+          convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
+                  metadata.getColumnLabel(col), mapNumerics);
+        }
       } catch (IOException e) {
         log.warn("Ignoring record because processing failed:", e);
       } catch (SQLException e) {

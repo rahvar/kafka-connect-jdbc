@@ -17,13 +17,14 @@
 package io.confluent.connect.jdbc.source;
 
 import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.source.SourceRecord;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
+import java.util.Set;
 /**
  * TableQuerier executes queries against a specific table. Implementations handle different types
  * of queries: periodic bulk loading, incremental loads using auto incrementing IDs, incremental
@@ -40,7 +41,7 @@ abstract class TableQuerier implements Comparable<TableQuerier> {
   protected final String name;
   protected final String query;
   protected final String topicPrefix;
-
+  protected final Set pkResults;
   // Mutable state
 
   protected final boolean mapNumerics;
@@ -48,9 +49,10 @@ abstract class TableQuerier implements Comparable<TableQuerier> {
   protected PreparedStatement stmt;
   protected ResultSet resultSet;
   protected Schema schema;
+  protected Schema keySchema;
 
   public TableQuerier(QueryMode mode, String nameOrQuery, String topicPrefix,
-                      String schemaPattern, boolean mapNumerics) {
+                      String schemaPattern, boolean mapNumerics,Set pkResults) {
     this.mode = mode;
     this.schemaPattern = schemaPattern;
     this.name = mode.equals(QueryMode.TABLE) ? nameOrQuery : null;
@@ -58,6 +60,7 @@ abstract class TableQuerier implements Comparable<TableQuerier> {
     this.topicPrefix = topicPrefix;
     this.mapNumerics = mapNumerics;
     this.lastUpdate = 0;
+    this.pkResults = pkResults;
   }
 
   public long getLastUpdate() {
@@ -83,6 +86,7 @@ abstract class TableQuerier implements Comparable<TableQuerier> {
       stmt = getOrCreatePreparedStatement(db);
       resultSet = executeQuery();
       schema = DataConverter.convertSchema(name, resultSet.getMetaData(), mapNumerics);
+      keySchema = DataConverter.convertSchema(name,resultSet.getMetaData(),mapNumerics,pkResults);
     }
   }
 

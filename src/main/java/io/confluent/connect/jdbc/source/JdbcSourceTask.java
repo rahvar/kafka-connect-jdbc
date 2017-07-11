@@ -26,10 +26,7 @@ import org.apache.kafka.connect.source.SourceTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -155,6 +152,30 @@ public class JdbcSourceTask extends SourceTask {
 //        log.info("Anonymization information not found for: " + tableOrQuery);
       }
 
+      Connection connection = cachedConnectionProvider.getValidConnection();
+
+      final Set<String> pkColumns = new HashSet<>();
+      ResultSet pkResultSet=null;
+      try {
+        //final DatabaseMetaData dbMetaData = connection.getMetaData();
+        //final String product = dbMetaData.getDatabaseProductName();
+        final String catalog = connection.getCatalog();
+        final String schema = connection.getSchema();
+        pkResultSet = connection.getMetaData().getPrimaryKeys(catalog,schema,tableOrQuery);
+
+
+        //stmt.close();
+        while (pkResultSet.next()) {
+          final String colName = pkResultSet.getString("COLUMN_NAME");
+
+          pkColumns.add(colName);
+        }
+        log.info("All Pk Info for table: "+tableOrQuery+" - "+pkColumns);
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+
+
       final Map<String, String> partition;
       switch (queryMode) {
         case TABLE:
@@ -178,7 +199,7 @@ public class JdbcSourceTask extends SourceTask {
 
       if (tableMode.equals(JdbcSourceTaskConfig.MODE_BULK)) {
         tableQueue.add(new BulkTableQuerier(queryMode, tableOrQuery, schemaPattern,
-                topicPrefix, mapNumerics,anonymizeMap));
+                topicPrefix, mapNumerics,anonymizeMap,pkColumns));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_INCREMENTING)) {
 //        log.info("Incrementing column info: "+tableOrQuery+"."+JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
         String tableIncrementingColumn=incrementingColumn;
@@ -191,7 +212,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, timestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix, null, tableIncrementingColumn, offset,
-                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap));
+                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_TIMESTAMP)) {
 //        log.info("Timestamp column info: "+tableOrQuery+"."+JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
         String tableTimestampColumn = timestampColumn;
@@ -204,7 +225,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, incrementingColumn,tableTimestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix,tableTimestampColumn, null, offset,
-                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap));
+                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
       } else if (tableMode.endsWith(JdbcSourceTaskConfig.MODE_TIMESTAMP_INCREMENTING)) {
 
 //        log.info("Entered timestamp+incrementing mode");
@@ -229,7 +250,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, tableTimestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix, tableTimestampColumn, tableIncrementingColumn,
-                offset, timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap));
+                offset, timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
       }
     }
 
