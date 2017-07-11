@@ -78,7 +78,7 @@ public class DataTransform implements Transform {
             String[] pathList = allPaths.split("&");
             anonymizedString = value;
             for (String path:pathList) {
-                String regex = "(?<="+path+"\".)(.*?)(?=,)";
+                String regex = "(?<="+path+"\".)(.*?)(?=[,}])";
                 anonymizedString = anonymizedString.replaceAll(regex,"\""+transformString("$1",transformer)+"\"");
             }
         }
