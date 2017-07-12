@@ -100,15 +100,23 @@ public class PreparedStatementBinder {
       break;
 
       case RECORD_KEY: {
-        if (schemaPair.keySchema.type().isPrimitive()) {
-          assert fieldsMetadata.keyFieldNames.size() == 1;
-          bindField(index++, schemaPair.keySchema, record.key());
-        } else {
+        if (schemaPair.keySchema!=null ) {
+          if (schemaPair.keySchema.type().isPrimitive()) {
+            assert fieldsMetadata.keyFieldNames.size() == 1;
+            bindField(index++, schemaPair.keySchema, record.key());
+          } else {
+            for (String fieldName : fieldsMetadata.keyFieldNames) {
+              final Field field = schemaPair.keySchema.field(fieldName);
+              bindField(index++, field.schema(), ((Struct) record.key()).get(field));
+            }
+          }
+        }else{
           for (String fieldName : fieldsMetadata.keyFieldNames) {
-            final Field field = schemaPair.keySchema.field(fieldName);
-            bindField(index++, field.schema(), ((Struct) record.key()).get(field));
+            final Field field = schemaPair.valueSchema.field(fieldName);
+            bindField(index++, field.schema(), ((Struct) record.value()).get(field));
           }
         }
+
       }
       break;
 

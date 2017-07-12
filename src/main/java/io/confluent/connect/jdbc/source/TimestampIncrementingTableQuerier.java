@@ -227,6 +227,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   @Override
   public SourceRecord extractRecord() throws SQLException {
     final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap);
+    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,pkResults);
+
     offset = extractOffset(schema, record);
     // TODO: Key?
     final String topic;
@@ -243,6 +245,11 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
         break;
       default:
         throw new ConnectException("Unexpected query mode: " + mode);
+    }
+
+
+    if(pkResults.size()>0){
+      return new SourceRecord(partition,offset.toMap(),topic,keyRecord.schema(),keyRecord,record.schema(),record);
     }
 
     return new SourceRecord(partition, offset.toMap(), topic, record.schema(), record);
