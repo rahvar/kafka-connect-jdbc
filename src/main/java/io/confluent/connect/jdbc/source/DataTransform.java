@@ -4,9 +4,6 @@ package io.confluent.connect.jdbc.source;
  * Created by shawnvarghese on 6/7/17.
  */
 
-//import com.jayway.jsonpath.DocumentContext;
-//import com.jayway.jsonpath.JsonPath;
-//import com.jayway.jsonpath.PathNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.crypto.Mac;
@@ -53,7 +50,7 @@ public class DataTransform implements Transform {
             return value;
         }
         try {
-            String message = value;
+            String message = value.trim();
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             sha256_HMAC.init(secret.getSecretKey());
             String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.getBytes()));
@@ -78,12 +75,12 @@ public class DataTransform implements Transform {
             String[] pathList = allPaths.split("&");
             anonymizedString = value;
             for (String path:pathList) {
-                String regex = "(?<="+path+"\".)(.*?)(?=[,}])";
+                String regex = "(?<="+path+"\":)(.*?)(?=[,}])";
                 anonymizedString = anonymizedString.replaceAll(regex,"\""+transformString("$1",transformer)+"\"");
             }
         }
         catch (Exception e) {
-            log.trace("Anonymization unsuccessful. Please verify JSON path is of the format: column_name#{path/to/key1&path/to/key2}");
+            log.trace("Anonymization unsuccessful. Please verify JSON path is of the format: column_name{key1&key2}");
             e.printStackTrace();
         }
         if (anonymizedString == null)
