@@ -157,8 +157,7 @@ public class JdbcSourceTask extends SourceTask {
       final Set<String> pkColumns = new HashSet<>();
       ResultSet pkResultSet=null;
       try {
-        //final DatabaseMetaData dbMetaData = connection.getMetaData();
-        //final String product = dbMetaData.getDatabaseProductName();
+
         final String catalog = connection.getCatalog();
         final String schema = connection.getSchema();
         pkResultSet = connection.getMetaData().getPrimaryKeys(catalog,schema,tableOrQuery);
@@ -170,7 +169,7 @@ public class JdbcSourceTask extends SourceTask {
 
           pkColumns.add(colName);
         }
-        log.info("All Pk Info for table: "+tableOrQuery+" - "+pkColumns);
+
       } catch (SQLException e) {
         e.printStackTrace();
       }
@@ -201,12 +200,12 @@ public class JdbcSourceTask extends SourceTask {
         tableQueue.add(new BulkTableQuerier(queryMode, tableOrQuery, schemaPattern,
                 topicPrefix, mapNumerics,anonymizeMap,pkColumns));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_INCREMENTING)) {
-//        log.info("Incrementing column info: "+tableOrQuery+"."+JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
+
         String tableIncrementingColumn=incrementingColumn;
         try {
           tableIncrementingColumn = config.getString(tableOrQuery + "." + JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
         } catch (Exception e){
-//          log.info("Table Specific Incrementing column not Defined. Reverting to default");
+
         }
         if(validateNonNulls)
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, timestampColumn);
@@ -214,12 +213,11 @@ public class JdbcSourceTask extends SourceTask {
             queryMode, tableOrQuery, topicPrefix, null, tableIncrementingColumn, offset,
                 timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_TIMESTAMP)) {
-//        log.info("Timestamp column info: "+tableOrQuery+"."+JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
         String tableTimestampColumn = timestampColumn;
         try {
           tableTimestampColumn = config.getString(tableOrQuery + "." + JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
         } catch (Exception e){
-//          log.info("Table specific timestamp column not defined. Reverting to default");
+
         }
         if(validateNonNulls)
           validateNonNullable(mode, schemaPattern, tableOrQuery, incrementingColumn,tableTimestampColumn);
@@ -228,23 +226,19 @@ public class JdbcSourceTask extends SourceTask {
                 timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
       } else if (tableMode.endsWith(JdbcSourceTaskConfig.MODE_TIMESTAMP_INCREMENTING)) {
 
-//        log.info("Entered timestamp+incrementing mode");
-//        log.info("Incrementing column info: "+tableOrQuery+"."+JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
-//        log.info("Timestamp column info: "+tableOrQuery+"."+JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
-
         String tableIncrementingColumn = incrementingColumn;
         String tableTimestampColumn = timestampColumn;
 
         try {
           tableIncrementingColumn = config.getString(tableOrQuery + "." + JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
         } catch (Exception e){
-//          log.info("Table specific incrementing column not defined. Reverting to default");
+
         }
 
         try {
           tableTimestampColumn = config.getString(tableOrQuery + "." + JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
         } catch (Exception e){
-//          log.info("Table specific timestamp column not defined. Reverting to default");
+
         }
         if(validateNonNulls)
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, tableTimestampColumn);

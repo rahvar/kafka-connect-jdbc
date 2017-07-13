@@ -110,15 +110,9 @@ public class PreparedStatementBinder {
               bindField(index++, field.schema(), ((Struct) record.key()).get(field));
             }
           }
-        }else{
-          for (String fieldName : fieldsMetadata.keyFieldNames) {
-            final Field field = schemaPair.valueSchema.field(fieldName);
-            bindField(index++, field.schema(), ((Struct) record.value()).get(field));
-          }
+          break;
         }
-
       }
-      break;
 
       case RECORD_VALUE: {
         for (String fieldName : fieldsMetadata.keyFieldNames) {

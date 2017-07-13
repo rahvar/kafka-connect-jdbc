@@ -138,33 +138,10 @@ public class FieldsMetadata {
           } else {
             throw new ConnectException("Key schema must be primitive type or Struct, but is of type: " + keySchemaType);
           }
-        }
-        else{
-          if (valueSchema == null) {
-            throw new ConnectException(String.format("PK mode for table '%s' is %s, but record value schema is missing", tableName, pkMode));
-          }
-          if (configuredPkFields.isEmpty()) {
-            for (Field keyField : valueSchema.fields()) {
-              keyFieldNames.add(keyField.name());
-            }
-          } else {
-            for (String fieldName : configuredPkFields) {
-              if (valueSchema.field(fieldName) == null) {
-                throw new ConnectException(String.format(
-                        "PK mode for table '%s' is %s with configured PK fields %s, but record value schema does not contain field: %s",
-                        tableName, pkMode, configuredPkFields, fieldName
-                ));
-              }
-            }
-            keyFieldNames.addAll(configuredPkFields);
-          }
-          for (String fieldName : keyFieldNames) {
-            final Schema fieldSchema = valueSchema.field(fieldName).schema();
-            allFields.put(fieldName, new SinkRecordField(fieldSchema, fieldName, true));
-          }
+          break;
         }
       }
-      break;
+
 
       case RECORD_VALUE: {
         if (valueSchema == null) {

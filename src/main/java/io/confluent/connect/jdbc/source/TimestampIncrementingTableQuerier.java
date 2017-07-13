@@ -226,8 +226,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
 
   @Override
   public SourceRecord extractRecord() throws SQLException {
-    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap);
-    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,pkResults);
+    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap,null);
+    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults);
 
     offset = extractOffset(schema, record);
     // TODO: Key?
