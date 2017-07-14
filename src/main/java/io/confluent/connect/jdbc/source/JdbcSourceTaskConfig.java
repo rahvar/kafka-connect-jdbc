@@ -85,17 +85,17 @@ public class JdbcSourceTaskConfig extends JdbcSourceConnectorConfig {
     setupKeyStore();
 
     for(String prop:props.keySet()){
-      if((prop.contains(INCREMENTING_COLUMN_NAME_CONFIG) && !prop.startsWith(INCREMENTING_COLUMN_NAME_CONFIG))){
+      if(prop.endsWith("." + INCREMENTING_COLUMN_NAME_CONFIG)){
         config.define(prop, Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,2, ConfigDef.Width.MEDIUM,"");
       }
-      else if((prop.contains(TIMESTAMP_COLUMN_NAME_CONFIG) && !prop.startsWith(TIMESTAMP_COLUMN_NAME_CONFIG)) ){
+      else if(prop.endsWith("."+TIMESTAMP_COLUMN_NAME_CONFIG)){
         config.define(prop, Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
       }
-      else if(prop.contains(MODE_CONFIG) && !prop.startsWith(MODE_CONFIG)){
+      else if(prop.endsWith("."+MODE_CONFIG)){
         config.define(prop, Type.STRING, MODE_UNSPECIFIED, ConfigDef.ValidString.in(MODE_UNSPECIFIED, MODE_BULK, MODE_TIMESTAMP, MODE_INCREMENTING, MODE_TIMESTAMP_INCREMENTING),
                 Importance.HIGH, "Doc", MODE_GROUP, 1, ConfigDef.Width.MEDIUM, "", Arrays.asList(INCREMENTING_COLUMN_NAME_CONFIG, TIMESTAMP_COLUMN_NAME_CONFIG, VALIDATE_NON_NULL_CONFIG));
       }
-      else if ((prop.equals(ANONYMIZE+".default")) || (prop.contains(ANONYMIZE + ".column.name"))) {
+      else if ((prop.equals(ANONYMIZE+".default")) || (prop.endsWith(ANONYMIZE + ".column.name"))) {
         config.define(prop,Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
       }
     }

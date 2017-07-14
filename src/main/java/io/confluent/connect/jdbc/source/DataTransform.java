@@ -10,6 +10,8 @@ import javax.crypto.Mac;
 import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.codec.binary.Base64;
 
 public class DataTransform implements Transform {
@@ -46,11 +48,18 @@ public class DataTransform implements Transform {
 
     public String transformString(String value, String transformer) {
         String hashtext = null;
+
+        String strToAnon = value.replace("[","").replace("]","")
+                .replace("\"","").replace("\\","").trim();
+
         if (value==null || value.trim().equals("")) {
             return value;
         }
+        if (strToAnon.equals("")) {
+            return "";
+        }
         try {
-            String message = value.trim();
+            String message = strToAnon;
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             sha256_HMAC.init(secret.getSecretKey());
             String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.getBytes()));
@@ -75,13 +84,36 @@ public class DataTransform implements Transform {
             String[] pathList = allPaths.split("&");
             anonymizedString = value;
             for (String path:pathList) {
-                String regex = "(?<="+path+"\":)(.*?)(?=[,}])";
-                anonymizedString = anonymizedString.replaceAll(regex,"\""+transformString("$1",transformer)+"\"");
+                String regex = "(?<=\""+path+"\":)(?:(?=.?\\[)(.*?\\])|((.*?)(?=[,}])))";
+//                String regex1 = "(?<=\""+path+"\":)(.?\\[.*?\\])";
+                Pattern p = Pattern.compile(regex);
+                Matcher m = p.matcher(anonymizedString);
+                StringBuffer sb = new StringBuffer(anonymizedString.length());
+                while (m.find()) {
+                    String match = m.group(0);
+                    if (match.trim().startsWith("[")) {
+                        m.appendReplacement(sb, transformStringArray(match,transformer));
+                    }
+                    else if (match.trim().startsWith("{") || match.trim().startsWith("[{")) {
+                        continue;
+                    }
+                    else {
+                        if (match.trim().startsWith("\\")) {
+                            m.appendReplacement(sb, "\\\\\"" + transformString(match,transformer) + "\\\\\"");
+                        }
+                        else {
+                            m.appendReplacement(sb, "\"" + transformString(match, transformer) + "\"");
+                        }
+                    }
+                }
+                m.appendTail(sb);
+                anonymizedString = sb.toString();
             }
         }
         catch (Exception e) {
             log.trace("Anonymization unsuccessful. Please verify JSON path is of the format: column_name{key1&key2}");
             e.printStackTrace();
+            anonymizedString = "{}";
         }
         if (anonymizedString == null)
             return null;
@@ -89,6 +121,27 @@ public class DataTransform implements Transform {
     }
 
     public String transformStringArray(String value,String transformer) {
+
+        String strToAnon = value.replace("[","").replace("]","")
+                        .replace("\"","").replace("\\","").trim();
+
+        if (value == null || value.trim().equals("") || value.equals("[]") || strToAnon.equals("")) {
+            return value;
+        }
+
+        String[] array = strToAnon.split(",");
+
+        StringBuilder strBuilder = new StringBuilder();
+        strBuilder.append("[");
+        for (int i = 0; i < array.length; i++) {
+            strBuilder.append("\"" + transformString(array[i],transformer) + "\"");
+            strBuilder.append(",");
+        }
+        strBuilder.replace(strBuilder.toString().lastIndexOf(","), strBuilder.toString().lastIndexOf(",") + 1, "]" );
+        return strBuilder.toString();
+    }
+
+    public String transformTextArray(String value,String transformer) {
 
         if (value == null || value.trim().equals("") || value.equals("{}")) {
             return value;
