@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import io.confluent.connect.jdbc.util.JdbcUtils;
 
@@ -38,14 +39,15 @@ public class BulkTableQuerier extends TableQuerier {
 
   private Map<String,String> anonymizeMap;
 
-  public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
+  /*public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
                           String topicPrefix, boolean mapNumerics) {
     super(mode, name, topicPrefix, schemaPattern, mapNumerics);
-  }
+  }*/
 
   public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
-                          String topicPrefix, boolean mapNumerics, Map<String,String> anonymizeMap) {
-    super(mode, name, topicPrefix, schemaPattern, mapNumerics);
+                          String topicPrefix, boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResultSet) {
+
+    super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
     this.anonymizeMap = anonymizeMap;
   }
 
@@ -75,7 +77,11 @@ public class BulkTableQuerier extends TableQuerier {
 
   @Override
   public SourceRecord extractRecord() throws SQLException {
-    Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics,anonymizeMap);
+
+    Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics,anonymizeMap,null);
+    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults);
+
+
     // TODO: key from primary key? partition?
     final String topic;
     final Map<String, String> partition;
@@ -91,6 +97,14 @@ public class BulkTableQuerier extends TableQuerier {
         break;
       default:
         throw new ConnectException("Unexpected query mode: " + mode);
+    }
+
+
+    if(pkResults.size()>0){
+      //String keyCol = (String)pkResults.iterator().next();
+      //Object key = record.get(keyCol);
+
+      return new SourceRecord(partition, null, topic,keyRecord.schema(),keyRecord, record.schema(), record);
     }
     return new SourceRecord(partition, null, topic, record.schema(), record);
   }

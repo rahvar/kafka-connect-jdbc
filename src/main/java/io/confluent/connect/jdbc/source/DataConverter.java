@@ -40,14 +40,18 @@ import io.confluent.connect.jdbc.util.DateTimeUtils;
 public class DataConverter {
   private static final Logger log = LoggerFactory.getLogger(JdbcSourceTask.class);
 
-  public static Schema convertSchema(String tableName, ResultSetMetaData metadata, boolean mapNumerics)
-      throws SQLException {
-    // TODO: Detect changes to metadata, which will require schema updates
+  public static Schema convertSchema(String tableName,ResultSetMetaData metadata,boolean mapNumerics,Set<String> pkResults)
+          throws SQLException {
+
     SchemaBuilder builder = SchemaBuilder.struct().name(tableName);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
-      addFieldSchema(metadata, col, builder, mapNumerics);
+      String name = metadata.getColumnName(col);
+
+      if(pkResults==null || pkResults.contains(name))
+          addFieldSchema(metadata, col, builder, mapNumerics);
     }
     return builder.build();
+
   }
 
   public static Struct convertRecord(Schema schema, ResultSet resultSet, boolean mapNumerics)
@@ -56,6 +60,7 @@ public class DataConverter {
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
+
         convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
                           metadata.getColumnLabel(col), mapNumerics);
       } catch (IOException e) {
@@ -67,14 +72,17 @@ public class DataConverter {
     return struct;
   }
 
+
   public static Struct convertRecord(Schema schema, ResultSet resultSet,
-                                     boolean mapNumerics, Map<String,String> anonymizeMap)
+                                     boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResults)
           throws SQLException {
 
     DataTransform dataT = new DataTransform();
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
+      if(pkResults!=null && !pkResults.contains(metadata.getColumnName(col)))
+           continue;
       try {
         String fieldName = metadata.getColumnLabel(col);
         String colType = metadata.getColumnTypeName(col);

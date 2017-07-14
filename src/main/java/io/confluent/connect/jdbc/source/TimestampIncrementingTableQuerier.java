@@ -32,7 +32,7 @@ import java.util.Map;
 
 import io.confluent.connect.jdbc.util.DateTimeUtils;
 import io.confluent.connect.jdbc.util.JdbcUtils;
-
+import java.util.Set;
 /**
  * <p>
  *   TimestampIncrementingTableQuerier performs incremental loading of data using two mechanisms: a
@@ -61,6 +61,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   private TimestampIncrementingOffset offset;
   private Map<String,String> anonymizeMap;
 
+  /*
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
                                            String timestampColumn, String incrementingColumn,
                                            Map<String, Object> offsetMap, Long timestampDelay,
@@ -71,12 +72,12 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
     this.timestampDelay = timestampDelay;
     this.offset = TimestampIncrementingOffset.fromMap(offsetMap);
   }
-
+*/
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
                                            String timestampColumn, String incrementingColumn,
                                            Map<String, Object> offsetMap, Long timestampDelay,
-                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap) {
-    super(mode, name, topicPrefix, schemaPattern, mapNumerics);
+                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap,Set pkResultSet) {
+    super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
     this.timestampColumn = timestampColumn;
     this.incrementingColumn = incrementingColumn;
     this.timestampDelay = timestampDelay;
@@ -225,7 +226,9 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
 
   @Override
   public SourceRecord extractRecord() throws SQLException {
-    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap);
+    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap,null);
+    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults);
+
     offset = extractOffset(schema, record);
     // TODO: Key?
     final String topic;
@@ -243,6 +246,12 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
       default:
         throw new ConnectException("Unexpected query mode: " + mode);
     }
+
+
+    if(pkResults.size()>0){
+      return new SourceRecord(partition,offset.toMap(),topic,keyRecord.schema(),keyRecord,record.schema(),record);
+    }
+
     return new SourceRecord(partition, offset.toMap(), topic, record.schema(), record);
   }
 
