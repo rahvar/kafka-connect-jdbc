@@ -678,7 +678,7 @@ public class DataConverter {
 
       case Types.ARRAY:
         if(resultSet.getMetaData().getColumnTypeName(col).equals("_text")) {
-          colValue = dataT.transformStringArray(resultSet.getString(col),transformer);
+          colValue = dataT.transformTextArray(resultSet.getString(col),transformer);
         }
         else {
           colValue = resultSet.getString(col);
