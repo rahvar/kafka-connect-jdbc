@@ -49,12 +49,13 @@ public class DataTransform implements Transform {
     public String transformString(String value, String transformer) {
         String hashtext = null;
 
-        String strToAnon = value.replace("[","").replace("]","")
-                .replace("\"","").replace("\\","").trim();
-
         if (value==null || value.trim().equals("")) {
             return value;
         }
+
+        String strToAnon = value.replace("[","").replace("]","")
+                .replace("\"","").replace("\\","").trim();
+
         if (strToAnon.equals("")) {
             return "";
         }
@@ -70,6 +71,9 @@ public class DataTransform implements Transform {
             log.trace("Hashing failed");
             e.printStackTrace();
         } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
 
