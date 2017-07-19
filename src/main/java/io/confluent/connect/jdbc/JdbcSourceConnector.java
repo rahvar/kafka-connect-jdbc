@@ -26,6 +26,7 @@ import org.apache.kafka.connect.util.ConnectorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +43,9 @@ import io.confluent.connect.jdbc.source.TableMonitorThread;
 import io.confluent.connect.jdbc.util.StringUtils;
 import io.confluent.connect.jdbc.util.Version;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+
 /**
  * JdbcConnector is a Kafka Connect Connector implementation that watches a JDBC database and
  * generates tasks to ingest database contents.
@@ -57,6 +61,41 @@ public class JdbcSourceConnector extends SourceConnector {
   private CachedConnectionProvider cachedConnectionProvider;
   private TableMonitorThread tableMonitorThread;
 
+  private static void setupKeyStore() {
+    try {
+      KeyGenerator kg = KeyGenerator.getInstance("AES");
+      kg.init(128);
+      SecretKey sk = kg.generateKey();
+
+      // Storing AES Secret key in keystore
+      KeyStore ks = KeyStore.getInstance("JCEKS");
+      char[] password = "RedL0ck!Anon".toCharArray();
+      java.io.FileInputStream fis = null;
+
+      ks.load(null, password);
+      KeyStore.ProtectionParameter protParam =
+              new KeyStore.PasswordProtection(password);
+
+      KeyStore.SecretKeyEntry skEntry = new KeyStore.SecretKeyEntry(sk);
+      ks.setEntry("anonymizeSKey", skEntry, protParam);
+
+      // store away the keystore
+      java.io.FileOutputStream fos = null;
+      try {
+        fos = new java.io.FileOutputStream("ANON_KEYSTORE_FILE");
+        ks.store(fos, password);
+      } finally {
+        if (fos != null) {
+          fos.close();
+        }
+      }
+    }
+    catch (Exception e) {
+      log.info("Exception in keystore setup");
+      e.printStackTrace();
+    }
+  }
+
   @Override
   public String version() {
     return Version.getVersion();
@@ -67,6 +106,10 @@ public class JdbcSourceConnector extends SourceConnector {
     try {
       configProperties = properties;
       config = new JdbcSourceConnectorConfig(configProperties);
+
+      setupKeyStore();
+
+
     } catch (ConfigException e) {
       throw new ConnectException("Couldn't start JdbcSourceConnector due to configuration "
                                  + "error", e);
