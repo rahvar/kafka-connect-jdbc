@@ -39,47 +39,13 @@ public class JdbcSourceTaskConfig extends JdbcSourceConnectorConfig {
   public static final String TABLES_CONFIG = "tables";
   private static final String TABLES_DOC = "List of tables for this task to watch for changes.";
 
+
   //static ConfigDef config = baseConfigDef()
       //.define(TABLES_CONFIG, Type.LIST, Importance.HIGH, TABLES_DOC);
 
   public JdbcSourceTaskConfig(Map<String, String> props) {
 
     super(modifyConfig(props), props);
-  }
-
-  private static void setupKeyStore() {
-    try {
-      KeyGenerator kg = KeyGenerator.getInstance("AES");
-      kg.init(128);
-      SecretKey sk = kg.generateKey();
-
-      // Storing AES Secret key in keystore
-      KeyStore ks = KeyStore.getInstance("JCEKS");
-      char[] password = "RedL0ck!Anon".toCharArray();
-      java.io.FileInputStream fis = null;
-
-      ks.load(null, password);
-      KeyStore.ProtectionParameter protParam =
-              new KeyStore.PasswordProtection(password);
-
-      KeyStore.SecretKeyEntry skEntry = new KeyStore.SecretKeyEntry(sk);
-      ks.setEntry("anonymizeSKey", skEntry, protParam);
-
-      // store away the keystore
-      java.io.FileOutputStream fos = null;
-      try {
-        fos = new java.io.FileOutputStream("ANON_KEYSTORE_FILE");
-        ks.store(fos, password);
-      } finally {
-        if (fos != null) {
-          fos.close();
-        }
-      }
-    }
-    catch (Exception e) {
-      log.info("Exception in keystore setup");
-      e.printStackTrace();
-    }
   }
 
   private static ConfigDef modifyConfig(Map<String,String >  props){

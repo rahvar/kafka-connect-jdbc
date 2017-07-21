@@ -223,10 +223,8 @@ public class JdbcSinkConfig extends AbstractConfig {
 
       if(config.configKeys().containsKey(prop))
         continue;
-
       if(prop.endsWith(".pk.fields") ){
         config.define(prop, ConfigDef.Type.LIST, ConfigDef.Importance.MEDIUM,"doc");
-
       }
       else if(prop.endsWith(".pk.mode")){
         config.define(prop, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM,"doc");

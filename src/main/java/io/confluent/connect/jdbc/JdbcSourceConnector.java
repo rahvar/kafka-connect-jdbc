@@ -16,6 +16,7 @@
 
 package io.confluent.connect.jdbc;
 
+import io.confluent.connect.jdbc.source.*;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
@@ -36,10 +37,6 @@ import java.util.Map;
 import java.util.Set;
 
 import io.confluent.connect.jdbc.util.CachedConnectionProvider;
-import io.confluent.connect.jdbc.source.JdbcSourceConnectorConfig;
-import io.confluent.connect.jdbc.source.JdbcSourceTask;
-import io.confluent.connect.jdbc.source.JdbcSourceTaskConfig;
-import io.confluent.connect.jdbc.source.TableMonitorThread;
 import io.confluent.connect.jdbc.util.StringUtils;
 import io.confluent.connect.jdbc.util.Version;
 
@@ -108,9 +105,8 @@ public class JdbcSourceConnector extends SourceConnector {
       config = new JdbcSourceConnectorConfig(configProperties);
 
       setupKeyStore();
-
-
     } catch (ConfigException e) {
+
       throw new ConnectException("Couldn't start JdbcSourceConnector due to configuration "
                                  + "error", e);
     }
