@@ -27,7 +27,7 @@ import javax.crypto.SecretKey;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Map;
-
+import java.util.Set;
 /**
  * Configuration options for a single JdbcSourceTask. These are processed after all
  * Connector-level configs have been parsed.
@@ -39,10 +39,12 @@ public class JdbcSourceTaskConfig extends JdbcSourceConnectorConfig {
   public static final String TABLES_CONFIG = "tables";
   private static final String TABLES_DOC = "List of tables for this task to watch for changes.";
 
-//  static ConfigDef config = baseConfigDef()
-//      .define(TABLES_CONFIG, Type.LIST, Importance.HIGH, TABLES_DOC);
+
+  //static ConfigDef config = baseConfigDef()
+      //.define(TABLES_CONFIG, Type.LIST, Importance.HIGH, TABLES_DOC);
 
   public JdbcSourceTaskConfig(Map<String, String> props) {
+
     super(modifyConfig(props), props);
   }
 
@@ -52,6 +54,7 @@ public class JdbcSourceTaskConfig extends JdbcSourceConnectorConfig {
             .define(TABLES_CONFIG, Type.LIST, Importance.HIGH, TABLES_DOC);
 
     for(String prop:props.keySet()){
+
       if(prop.endsWith("." + INCREMENTING_COLUMN_NAME_CONFIG)){
         config.define(prop, Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,2, ConfigDef.Width.MEDIUM,"");
       }
@@ -66,6 +69,9 @@ public class JdbcSourceTaskConfig extends JdbcSourceConnectorConfig {
         config.define(prop,Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
       }
     }
+
     return config;
+
+
   }
 }
