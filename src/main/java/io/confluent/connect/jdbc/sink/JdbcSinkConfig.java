@@ -220,6 +220,8 @@ public class JdbcSinkConfig extends AbstractConfig {
     //String topicInfo =(String) props.get("topic");
 
     for(String prop: props.keySet()){
+      if(config.configKeys().containsKey(prop))
+        continue;
       if(prop.contains("pk.fields") && !prop.startsWith("pk.fields")){
         config.define(prop, ConfigDef.Type.LIST, ConfigDef.Importance.MEDIUM,"doc");
 

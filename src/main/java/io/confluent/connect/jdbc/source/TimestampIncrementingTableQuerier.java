@@ -60,6 +60,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   private long timestampDelay;
   private TimestampIncrementingOffset offset;
   private Map<String,String> anonymizeMap;
+  private Map<String,Transformer> transformerMap;
 
   /*
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
@@ -76,14 +77,15 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
                                            String timestampColumn, String incrementingColumn,
                                            Map<String, Object> offsetMap, Long timestampDelay,
-                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap,Set pkResultSet) {
+                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap,Set pkResultSet,
+                                           Map<String,Transformer> transformerMap) {
     super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
     this.timestampColumn = timestampColumn;
     this.incrementingColumn = incrementingColumn;
     this.timestampDelay = timestampDelay;
     this.offset = TimestampIncrementingOffset.fromMap(offsetMap);
-//    this.anonymizeList = new ArrayList<String>();  // Is this required?
     this.anonymizeMap = anonymizeMap;
+    this.transformerMap = transformerMap;
   }
 
   @Override
@@ -226,8 +228,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
 
   @Override
   public SourceRecord extractRecord() throws SQLException {
-    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap,null);
-    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults);
+    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap,null,transformerMap);
+    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults,transformerMap);
 
     offset = extractOffset(schema, record);
     // TODO: Key?

@@ -26,6 +26,8 @@ import org.apache.kafka.connect.source.SourceTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +50,7 @@ public class JdbcSourceTask extends SourceTask {
   private PriorityQueue<TableQuerier> tableQueue = new PriorityQueue<TableQuerier>();
   private AtomicBoolean stop;
   private Map<String,String> anonymizeMap;
+  private Map<String, Transformer> transformerMap;
 
   public JdbcSourceTask() {
     this.time = new SystemTime();
@@ -62,10 +65,38 @@ public class JdbcSourceTask extends SourceTask {
     return Version.getVersion();
   }
 
+  public Map<String,Transformer> loadAnonymizerClasses(JdbcSourceConnectorConfig config) {
+    Map<String,Transformer> anonymizeMapping = null;
+    if (config.originals().containsKey("transformers")) {
+      String transformerString = (String) config.originals().get("transformers");
+      String[] transformersList = transformerString.split(",");
+      anonymizeMapping = new HashMap<String,Transformer>();
+      for (String transformer:transformersList) {
+        Class<?> c = null;
+        try {
+          c = Class.forName(transformer.trim());
+          Method method = c.getDeclaredMethod("init");
+          Transformer anonObj = (Transformer) method.invoke(null);
+          anonymizeMapping.put(c.getSimpleName(),anonObj);
+        } catch (ClassNotFoundException e) {
+          e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+          e.printStackTrace();
+        } catch (IllegalAccessException e) {
+          e.printStackTrace();
+        } catch (InvocationTargetException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    return anonymizeMapping;
+  }
+
   @Override
   public void start(Map<String, String> properties) {
     try {
       config = new JdbcSourceTaskConfig(properties);
+      transformerMap = loadAnonymizerClasses(config);
     } catch (ConfigException e) {
       throw new ConnectException("Couldn't start JdbcSourceTask due to configuration error", e);
     }
@@ -198,7 +229,7 @@ public class JdbcSourceTask extends SourceTask {
 
       if (tableMode.equals(JdbcSourceTaskConfig.MODE_BULK)) {
         tableQueue.add(new BulkTableQuerier(queryMode, tableOrQuery, schemaPattern,
-                topicPrefix, mapNumerics,anonymizeMap,pkColumns));
+                topicPrefix, mapNumerics,anonymizeMap,pkColumns,transformerMap));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_INCREMENTING)) {
 
         String tableIncrementingColumn=incrementingColumn;
@@ -211,7 +242,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, timestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix, null, tableIncrementingColumn, offset,
-                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
+                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_TIMESTAMP)) {
         String tableTimestampColumn = timestampColumn;
         try {
@@ -223,7 +254,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, incrementingColumn,tableTimestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix,tableTimestampColumn, null, offset,
-                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
+                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap));
       } else if (tableMode.endsWith(JdbcSourceTaskConfig.MODE_TIMESTAMP_INCREMENTING)) {
 
         String tableIncrementingColumn = incrementingColumn;
@@ -244,7 +275,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, tableTimestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix, tableTimestampColumn, tableIncrementingColumn,
-                offset, timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns));
+                offset, timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap));
       }
     }
 

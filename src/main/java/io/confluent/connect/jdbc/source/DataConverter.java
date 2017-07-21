@@ -72,12 +72,11 @@ public class DataConverter {
     return struct;
   }
 
-
   public static Struct convertRecord(Schema schema, ResultSet resultSet,
-                                     boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResults)
+                                     boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResults,
+                                     Map<String,Transformer> transformerMap)
           throws SQLException {
 
-    DataTransform dataT = new DataTransform();
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
@@ -102,11 +101,15 @@ public class DataConverter {
         else if (anonymizeMap!=null && anonymizeMap.keySet().contains(fieldName)) {
           anonymizeCol = true;
         }
+        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(fieldName + "!")) {
+          anonymizeCol = true;
+          anonymizeKey = anonymizeKey + "!";
+        }
 
         if (anonymizeCol) {
+          Transformer transfomerClass = transformerMap.get(anonymizeMap.get(anonymizeKey));
           convertFieldAnonymize(resultSet, col, metadata.getColumnType(col), struct,
-                  fieldName, mapNumerics,anonymizeMap.get(anonymizeKey),
-                  colType,anonymizeKey,dataT);
+                  fieldName, mapNumerics, colType,anonymizeKey,transfomerClass);
         }
         else {
           convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
@@ -652,8 +655,8 @@ public class DataConverter {
   }
 
   private static void convertFieldAnonymize(ResultSet resultSet, int col, int colType,
-                                                 Struct struct, String fieldName, boolean mapNumerics,String transformer,
-                                                 String columnTypeName, String anonymizeKey, DataTransform dataT)
+                                                 Struct struct, String fieldName, boolean mapNumerics,
+                                                 String columnTypeName, String anonymizeKey, Transformer transformerClass)
           throws SQLException, IOException {
     final Object colValue;
     switch (colType) {
@@ -665,20 +668,35 @@ public class DataConverter {
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR: {
-          colValue = dataT.transformString(resultSet.getString(col),transformer);
+          if (anonymizeKey.endsWith("!")) {
+            colValue = null;
+          }
+          else {
+            colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
+          }
         break;
       }
 
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR: {
-        colValue = dataT.transformString(resultSet.getNString(col),transformer);
+        if (anonymizeKey.endsWith("!")) {
+          colValue = null;
+        }
+        else {
+          colValue = (String) transformerClass.transform(colType, resultSet.getNString(col), null);
+        }
         break;
       }
 
       case Types.ARRAY:
         if(resultSet.getMetaData().getColumnTypeName(col).equals("_text")) {
-          colValue = dataT.transformTextArray(resultSet.getString(col),transformer);
+          if (anonymizeKey.endsWith("!")) {
+            colValue = "{}";
+          }
+          else {
+            colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
+          }
         }
         else {
           colValue = resultSet.getString(col);
@@ -687,7 +705,12 @@ public class DataConverter {
 
       case Types.OTHER:
         if(columnTypeName.equals("jsonb")) {
-          colValue = dataT.transformJSON(resultSet.getString(col),transformer,anonymizeKey, fieldName);
+          if (anonymizeKey.endsWith("!")) {
+            colValue = "{}";
+          }
+          else {
+            colValue = (String) transformerClass.transform(colType, resultSet.getString(col), new String[]{anonymizeKey});
+          }
           break;
         }
       default: {

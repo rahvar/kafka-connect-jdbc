@@ -38,6 +38,7 @@ public class BulkTableQuerier extends TableQuerier {
   private static final Logger log = LoggerFactory.getLogger(BulkTableQuerier.class);
 
   private Map<String,String> anonymizeMap;
+  private Map<String, Transformer> transformerMap;
 
   /*public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
                           String topicPrefix, boolean mapNumerics) {
@@ -45,10 +46,12 @@ public class BulkTableQuerier extends TableQuerier {
   }*/
 
   public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
-                          String topicPrefix, boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResultSet) {
+                          String topicPrefix, boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResultSet,
+                          Map<String,Transformer> transformerMap) {
 
     super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
     this.anonymizeMap = anonymizeMap;
+    this.transformerMap = transformerMap;
   }
 
   @Override
@@ -78,8 +81,8 @@ public class BulkTableQuerier extends TableQuerier {
   @Override
   public SourceRecord extractRecord() throws SQLException {
 
-    Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics,anonymizeMap,null);
-    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults);
+    Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics,anonymizeMap,null,transformerMap);
+    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults,transformerMap);
 
 
     // TODO: key from primary key? partition?

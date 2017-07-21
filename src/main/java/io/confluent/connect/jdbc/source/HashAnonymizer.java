@@ -1,25 +1,27 @@
 package io.confluent.connect.jdbc.source;
 
-/**
- * Created by shawnvarghese on 6/7/17.
- */
-
+import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import javax.crypto.Mac;
 import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.sql.Types;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.codec.binary.Base64;
 
-public class DataTransform implements Transform {
+public class HashAnonymizer implements Transformer<Object>{
 
-    private static final Logger log = LoggerFactory.getLogger(DataTransform.class);
-    private static KeyStore.SecretKeyEntry secret;
+    private static final Logger log = LoggerFactory.getLogger(HashAnonymizer.class);
+    private KeyStore.SecretKeyEntry secret;
 
-    DataTransform() {
+    private HashAnonymizer () {
+    }
+
+    public static Transformer init() {
+        HashAnonymizer anonymizer = null;
         try {
             KeyStore ks = KeyStore.getInstance("JCEKS");
             char[] password = "RedL0ck!Anon".toCharArray();
@@ -31,7 +33,8 @@ public class DataTransform implements Transform {
                     new KeyStore.PasswordProtection(password);
             fis.close();
 
-            secret = (KeyStore.SecretKeyEntry)ks.getEntry("anonymizeSKey",protParam);
+            anonymizer = new HashAnonymizer();
+            anonymizer.secret = (KeyStore.SecretKeyEntry)ks.getEntry("anonymizeSKey",protParam);
 
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -44,9 +47,10 @@ public class DataTransform implements Transform {
         } catch (UnrecoverableEntryException e) {
             e.printStackTrace();
         }
+        return (Transformer) anonymizer;
     }
 
-    public String transformString(String value, String transformer) {
+    public String transformString(String value) {
         String hashtext = null;
 
         if (value==null || value.trim().equals("")) {
@@ -80,11 +84,11 @@ public class DataTransform implements Transform {
         return hashtext;
     }
 
-    public String transformJSON(String value, String transformer, String anonymizeKey, String fieldName) {
+    public String transformJSON(String value, String anonymizeKey) {
         String anonymizedString = null;
         try {
-            String allPaths = anonymizeKey.substring((fieldName).length()+1,anonymizeKey.length())
-                                                        .replace("{","").replace("}","");
+            String allPaths = anonymizeKey.substring(anonymizeKey.indexOf("{")+1,anonymizeKey.length())
+                    .replace("{","").replace("}","");
             String[] pathList = allPaths.split("&");
             anonymizedString = value;
             for (String path:pathList) {
@@ -96,17 +100,17 @@ public class DataTransform implements Transform {
                 while (m.find()) {
                     String match = m.group(0);
                     if (match.trim().startsWith("[")) {
-                        m.appendReplacement(sb, transformStringArray(match,transformer));
+                        m.appendReplacement(sb, transformStringArray(match));
                     }
                     else if (match.trim().startsWith("{") || match.trim().startsWith("[{")) {
                         continue;
                     }
                     else {
                         if (match.trim().startsWith("\\")) {
-                            m.appendReplacement(sb, "\\\\\"" + transformString(match,transformer) + "\\\\\"");
+                            m.appendReplacement(sb, "\\\\\"" + transformString(match) + "\\\\\"");
                         }
                         else {
-                            m.appendReplacement(sb, "\"" + transformString(match, transformer) + "\"");
+                            m.appendReplacement(sb, "\"" + transformString(match) + "\"");
                         }
                     }
                 }
@@ -124,10 +128,10 @@ public class DataTransform implements Transform {
         return anonymizedString;
     }
 
-    public String transformStringArray(String value,String transformer) {
+    public String transformStringArray(String value) {
 
         String strToAnon = value.replace("[","").replace("]","")
-                        .replace("\"","").replace("\\","").trim();
+                .replace("\"","").replace("\\","").trim();
 
         if (value == null || value.trim().equals("") || value.equals("[]") || strToAnon.equals("")) {
             return value;
@@ -138,14 +142,14 @@ public class DataTransform implements Transform {
         StringBuilder strBuilder = new StringBuilder();
         strBuilder.append("[");
         for (int i = 0; i < array.length; i++) {
-            strBuilder.append("\"" + transformString(array[i],transformer) + "\"");
+            strBuilder.append("\"" + transformString(array[i]) + "\"");
             strBuilder.append(",");
         }
         strBuilder.replace(strBuilder.toString().lastIndexOf(","), strBuilder.toString().lastIndexOf(",") + 1, "]" );
         return strBuilder.toString();
     }
 
-    public String transformTextArray(String value,String transformer) {
+    public String transformTextArray(String value) {
 
         if (value == null || value.trim().equals("") || value.equals("{}")) {
             return value;
@@ -156,10 +160,41 @@ public class DataTransform implements Transform {
         StringBuilder strBuilder = new StringBuilder();
         strBuilder.append("{");
         for (int i = 0; i < array.length; i++) {
-            strBuilder.append(transformString(array[i],transformer));
+            strBuilder.append(transformString(array[i]));
             strBuilder.append(",");
         }
         strBuilder.replace(strBuilder.toString().lastIndexOf(","), strBuilder.toString().lastIndexOf(",") + 1, "}" );
         return strBuilder.toString();
+    }
+
+    @Override
+    public Object transform(int colType, Object value, String[] fieldArgs) {
+        String colValue = null;
+        switch (colType) {
+
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR: {
+                colValue = transformString((String) value);
+                break;
+            }
+
+            case Types.NCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR: {
+                colValue = transformString((String) value);
+                break;
+            }
+
+            case Types.ARRAY:
+                colValue = transformTextArray((String) value);
+                break;
+
+            case Types.OTHER:
+                colValue = transformJSON((String) value, fieldArgs[0]);
+                break;
+
+        }
+        return colValue;
     }
 }
