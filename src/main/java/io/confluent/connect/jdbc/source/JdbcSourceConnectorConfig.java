@@ -220,42 +220,14 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
         .define(TIMESTAMP_DELAY_INTERVAL_MS_CONFIG, Type.LONG, TIMESTAMP_DELAY_INTERVAL_MS_DEFAULT, Importance.HIGH, TIMESTAMP_DELAY_INTERVAL_MS_DOC, CONNECTOR_GROUP, 5, Width.MEDIUM, TIMESTAMP_DELAY_INTERVAL_MS_DISPLAY);
   }
 
-  public static ConfigDef CONFIG_DEF = baseConfigDef();
+  public static final ConfigDef CONFIG_DEF = baseConfigDef();
 
   public JdbcSourceConnectorConfig(Map<String, String> props) {
-    super(modifyConfig(CONFIG_DEF,props), props);
+    super(CONFIG_DEF, props);
     String mode = getString(JdbcSourceConnectorConfig.MODE_CONFIG);
     if (mode.equals(JdbcSourceConnectorConfig.MODE_UNSPECIFIED))
       throw new ConfigException("Query mode must be specified");
   }
-
-
-  private static ConfigDef modifyConfig(ConfigDef config,Map<String,String >  props){
-    //setupKeyStore();
-
-    for(String prop:props.keySet()){
-
-      if(config.configKeys().containsKey(prop))
-        continue;
-
-      if(prop.endsWith("." + INCREMENTING_COLUMN_NAME_CONFIG)){
-        config.define(prop, Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,2, ConfigDef.Width.MEDIUM,"");
-      }
-      else if(prop.endsWith("."+TIMESTAMP_COLUMN_NAME_CONFIG)){
-        config.define(prop, Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
-      }
-      else if(prop.endsWith("."+MODE_CONFIG)){
-        config.define(prop, Type.STRING, MODE_UNSPECIFIED, ConfigDef.ValidString.in(MODE_UNSPECIFIED, MODE_BULK, MODE_TIMESTAMP, MODE_INCREMENTING, MODE_TIMESTAMP_INCREMENTING),
-                Importance.HIGH, "Doc", MODE_GROUP, 1, ConfigDef.Width.MEDIUM, "", Arrays.asList(INCREMENTING_COLUMN_NAME_CONFIG, TIMESTAMP_COLUMN_NAME_CONFIG, VALIDATE_NON_NULL_CONFIG));
-      }
-      else if ((prop.equals(ANONYMIZE+".default")) || (prop.endsWith(ANONYMIZE + ".column.name"))) {
-        config.define(prop,Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
-      }
-    }
-    return config;
-  }
-
-
 
   private static class TableRecommender implements Recommender {
 
