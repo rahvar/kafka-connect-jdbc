@@ -115,6 +115,9 @@ public class BufferedRecords {
         totalUpdateCount += updateCount;
       }
     }
+    catch (SQLException e) {
+      e.getNextException().printStackTrace();
+    }
     catch (Exception e){
       e.printStackTrace();
     }
@@ -135,7 +138,6 @@ public class BufferedRecords {
               config.insertMode + " records:{} , but no count of the number of rows it affected is available",
               records.size());
     }
-
 
     final List<SinkRecord> flushedRecords = records;
     records = new ArrayList<>();

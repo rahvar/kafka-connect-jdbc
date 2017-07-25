@@ -39,6 +39,7 @@ public class BulkTableQuerier extends TableQuerier {
 
   private Map<String,String> anonymizeMap;
   private Map<String, Transformer> transformerMap;
+  private String whitelistedColumns;
 
   /*public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
                           String topicPrefix, boolean mapNumerics) {
@@ -47,11 +48,12 @@ public class BulkTableQuerier extends TableQuerier {
 
   public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
                           String topicPrefix, boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResultSet,
-                          Map<String,Transformer> transformerMap) {
+                          Map<String,Transformer> transformerMap, String whitelistedColumns) {
 
     super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
     this.anonymizeMap = anonymizeMap;
     this.transformerMap = transformerMap;
+    this.whitelistedColumns = whitelistedColumns;
   }
 
   @Override
@@ -59,7 +61,13 @@ public class BulkTableQuerier extends TableQuerier {
     switch (mode) {
       case TABLE:
         String quoteString = JdbcUtils.getIdentifierQuoteString(db);
-        String queryString = "SELECT * FROM " + JdbcUtils.quoteString(name, quoteString);
+        String queryString = null;
+        if (this.whitelistedColumns == null) {
+          queryString = "SELECT * FROM " + JdbcUtils.quoteString(name, quoteString);
+        }
+        if (this.whitelistedColumns != null) {
+          queryString = "SELECT " + this.whitelistedColumns + " FROM " + JdbcUtils.quoteString(name, quoteString);
+        }
         log.debug("{} prepared SQL query: {}", this, queryString);
         stmt = db.prepareStatement(queryString,ResultSet.TYPE_SCROLL_SENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
