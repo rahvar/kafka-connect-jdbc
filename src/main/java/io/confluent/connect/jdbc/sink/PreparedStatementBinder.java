@@ -99,6 +99,16 @@ public class PreparedStatementBinder {
       }
       break;
 
+      case RECORD_VALUE: {
+        if (!fieldsMetadata.keyFieldNames.isEmpty()) {
+          for (String fieldName : fieldsMetadata.keyFieldNames) {
+            final Field field = schemaPair.valueSchema.field(fieldName);
+            bindField(index++, field.schema(), ((Struct) record.value()).get(field));
+          }
+          break;
+        }
+      }
+
       case RECORD_KEY: {
         if (schemaPair.keySchema!=null ) {
           if (schemaPair.keySchema.type().isPrimitive()) {
@@ -114,12 +124,6 @@ public class PreparedStatementBinder {
         }
       }
 
-      case RECORD_VALUE: {
-        for (String fieldName : fieldsMetadata.keyFieldNames) {
-          final Field field = schemaPair.valueSchema.field(fieldName);
-          bindField(index++, field.schema(), ((Struct) record.value()).get(field));
-        }
-      }
       break;
     }
     return index;
