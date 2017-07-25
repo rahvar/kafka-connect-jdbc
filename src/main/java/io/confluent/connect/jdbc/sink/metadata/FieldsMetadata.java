@@ -97,12 +97,36 @@ public class FieldsMetadata {
       }
       break;
 
-      case RECORD_KEY: {
-        if (keySchema != null) {
-         /* throw new ConnectException(String.format(
-              "PK mode for table '%s' is %s, but record key schema is missing", tableName, pkMode
-          ));*/
+      case RECORD_VALUE: {
+        if (valueSchema == null) {
+          throw new ConnectException(String.format("PK mode for table '%s' is %s, but record value schema is missing", tableName, pkMode));
+        }
+        if (!configuredPkFields.isEmpty())  {
+          for (String fieldName : configuredPkFields) {
+            if (valueSchema.field(fieldName) == null) {
+              throw new ConnectException(String.format(
+                  "PK mode for table '%s' is %s with configured PK fields %s, but record value schema does not contain field: %s",
+                  tableName, pkMode, configuredPkFields, fieldName
+              ));
+            }
+          }
+          keyFieldNames.addAll(configuredPkFields);
 
+          for (String fieldName : keyFieldNames) {
+            final Schema fieldSchema = valueSchema.field(fieldName).schema();
+            allFields.put(fieldName, new SinkRecordField(fieldSchema, fieldName, true));
+          }
+          break;
+        }
+
+      }
+
+      case RECORD_KEY: {
+        if (keySchema == null) {
+          throw new ConnectException(String.format(
+              "Table '%s' doesn't have a primary key. %s.pk.fields must be set. ", tableName,tableName
+          ));
+        }
           final Schema.Type keySchemaType = keySchema.type();
           if (keySchemaType.isPrimitive()) {
             if (configuredPkFields.size() != 1) {
@@ -139,35 +163,9 @@ public class FieldsMetadata {
             throw new ConnectException("Key schema must be primitive type or Struct, but is of type: " + keySchemaType);
           }
           break;
-        }
+
       }
 
-
-      case RECORD_VALUE: {
-        if (valueSchema == null) {
-          throw new ConnectException(String.format("PK mode for table '%s' is %s, but record value schema is missing", tableName, pkMode));
-        }
-        if (configuredPkFields.isEmpty()) {
-          for (Field keyField : valueSchema.fields()) {
-            keyFieldNames.add(keyField.name());
-          }
-        } else {
-          for (String fieldName : configuredPkFields) {
-            if (valueSchema.field(fieldName) == null) {
-              throw new ConnectException(String.format(
-                  "PK mode for table '%s' is %s with configured PK fields %s, but record value schema does not contain field: %s",
-                  tableName, pkMode, configuredPkFields, fieldName
-              ));
-            }
-          }
-          keyFieldNames.addAll(configuredPkFields);
-        }
-        for (String fieldName : keyFieldNames) {
-          final Schema fieldSchema = valueSchema.field(fieldName).schema();
-          allFields.put(fieldName, new SinkRecordField(fieldSchema, fieldName, true));
-        }
-      }
-      break;
 
     }
 
