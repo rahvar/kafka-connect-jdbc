@@ -16,6 +16,7 @@
 
 package io.confluent.connect.jdbc.source;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
@@ -23,6 +24,7 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
+import org.glassfish.jersey.uri.UriComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +89,9 @@ public class DataConverter {
         String colType = metadata.getColumnTypeName(col);
         String anonymizeKey = fieldName;
         Boolean anonymizeCol = false;
+        int[] supportedTypes = new int[] {Types.CHAR, Types.VARCHAR, Types.LONGVARCHAR, Types.NCHAR, Types.NVARCHAR,
+                                          Types.LONGNVARCHAR,Types.ARRAY, Types.OTHER};
+        int colTypeInt = metadata.getColumnType(col);
         if (colType.equals("jsonb")) {
           if (anonymizeMap!=null) {
             for (String key : anonymizeMap.keySet()) {
@@ -106,7 +111,7 @@ public class DataConverter {
           anonymizeKey = anonymizeKey + "!";
         }
 
-        if (anonymizeCol) {
+        if (anonymizeCol && ArrayUtils.contains(supportedTypes,colTypeInt)) {
           Transformer transfomerClass = transformerMap.get(anonymizeMap.get(anonymizeKey));
           convertFieldAnonymize(resultSet, col, metadata.getColumnType(col), struct,
                   fieldName, mapNumerics, colType,anonymizeKey,transfomerClass);
@@ -669,7 +674,7 @@ public class DataConverter {
       case Types.VARCHAR:
       case Types.LONGVARCHAR: {
           if (anonymizeKey.endsWith("!")) {
-            colValue = null;
+            colValue = "";
           }
           else {
             colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
@@ -681,7 +686,7 @@ public class DataConverter {
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR: {
         if (anonymizeKey.endsWith("!")) {
-          colValue = null;
+          colValue = "";
         }
         else {
           colValue = (String) transformerClass.transform(colType, resultSet.getNString(col), null);
@@ -712,6 +717,9 @@ public class DataConverter {
             colValue = (String) transformerClass.transform(colType, resultSet.getString(col), new String[]{anonymizeKey});
           }
           break;
+        }
+        else {
+          colValue = resultSet.getString(col);
         }
       default: {
         return;

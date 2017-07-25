@@ -51,6 +51,7 @@ public class JdbcSourceTask extends SourceTask {
   private AtomicBoolean stop;
   private Map<String,String> anonymizeMap;
   private Map<String, Transformer> transformerMap;
+  private String whitelistedColumns;
 
   public JdbcSourceTask() {
     this.time = new SystemTime();
@@ -152,6 +153,25 @@ public class JdbcSourceTask extends SourceTask {
 
 //    log.info("Default Incrementing Column: "+incrementingColumn);
 //    log.info("Default Timestamp Column: "+timestampColumn);
+
+    String defaultAnonymizer = null;
+    if (config.originals().containsKey(JdbcSourceTaskConfig.ANONYMIZE+".default")) {
+      try {
+        defaultAnonymizer = config.getString(JdbcSourceTaskConfig.ANONYMIZE + ".default");
+        if (transformerMap == null) {
+          throw new Exception("Transformers not configured correctly. Please ensure the configuration file specifies transformers " +
+                  "e.g. transformers=io.confluent.connect.jdbc.source.HashAnonymizer");
+        }
+        if (!transformerMap.containsKey(defaultAnonymizer)) {
+          throw new Exception("Default anonymization class: " + defaultAnonymizer + " does not exist. Please re-check configuration file." +
+                  "e.g. anonymize.default=HashAnonymizer");
+        }
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
     for (String tableOrQuery : tablesOrQuery) {
       String tableMode = mode;
       try {
@@ -166,21 +186,47 @@ public class JdbcSourceTask extends SourceTask {
       // Store all column names to be anonymized in anonymizeList
       anonymizeMap = null;
       try {
-        String defaultAnonymizer = config.getString(JdbcSourceTaskConfig.ANONYMIZE+".default");
         String anonymizeKey = tableOrQuery +"."+JdbcSourceTaskConfig.ANONYMIZE +".column.name";
-
-        String colsToAnonymizeconfig = config.getString(anonymizeKey);
-        ArrayList<String> anonymizeList = new  ArrayList<String>(Arrays.asList(colsToAnonymizeconfig.split(",")));
-        anonymizeMap = new HashMap<String,String>();
-        for (String col:anonymizeList) {
-          if (col.contains(":")) {
-            anonymizeMap.put(col.split(":")[0],col.split(":")[1]);
-          } else {
-            anonymizeMap.put(col,defaultAnonymizer);
+        if (config.originals().containsKey(anonymizeKey)) {
+          if (defaultAnonymizer==null) {
+            throw new Exception("Could not find default anonymization class. Please re-check configuration file." +
+                    "e.g. anonymize.default=HashAnonymizer");
+          }
+          String colsToAnonymizeconfig = config.getString(anonymizeKey);
+          ArrayList<String> anonymizeList = new  ArrayList<String>(Arrays.asList(colsToAnonymizeconfig.split(",")));
+          anonymizeMap = new HashMap<String,String>();
+          for (String col:anonymizeList) {
+            if (col.contains(":")) {
+              String anonClassForCol = col.split(":")[1];
+              if (!transformerMap.containsKey(anonClassForCol)) {
+                anonymizeMap.put(col,defaultAnonymizer);
+                throw new Exception("Anonymization Class:" + anonClassForCol + " for column: " + col + " does not exist. Will revert to default");
+              }
+              else {
+                anonymizeMap.put(col.split(":")[0], col.split(":")[1]);
+              }
+            }
+            else {
+              anonymizeMap.put(col,defaultAnonymizer);
+            }
           }
         }
-      } catch (Exception e) {
-//        log.info("Anonymization information not found for: " + tableOrQuery);
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+      }
+
+      /*
+      Retrieve whitelisted columns if any.
+       */
+      whitelistedColumns = null;
+      try {
+        String whitelistedCol = tableOrQuery + ".whitelist.column.name";
+        if (config.originals().containsKey(whitelistedCol)) {
+          whitelistedColumns = config.getString(whitelistedCol);
+        }
+      }
+      catch (Exception e) {
       }
 
       Connection connection = cachedConnectionProvider.getValidConnection();
@@ -229,7 +275,7 @@ public class JdbcSourceTask extends SourceTask {
 
       if (tableMode.equals(JdbcSourceTaskConfig.MODE_BULK)) {
         tableQueue.add(new BulkTableQuerier(queryMode, tableOrQuery, schemaPattern,
-                topicPrefix, mapNumerics,anonymizeMap,pkColumns,transformerMap));
+                topicPrefix, mapNumerics,anonymizeMap,pkColumns,transformerMap,whitelistedColumns));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_INCREMENTING)) {
 
         String tableIncrementingColumn=incrementingColumn;
@@ -242,7 +288,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, timestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix, null, tableIncrementingColumn, offset,
-                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap));
+                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap,whitelistedColumns));
       } else if (tableMode.equals(JdbcSourceTaskConfig.MODE_TIMESTAMP)) {
         String tableTimestampColumn = timestampColumn;
         try {
@@ -254,7 +300,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, incrementingColumn,tableTimestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix,tableTimestampColumn, null, offset,
-                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap));
+                timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap,whitelistedColumns));
       } else if (tableMode.endsWith(JdbcSourceTaskConfig.MODE_TIMESTAMP_INCREMENTING)) {
 
         String tableIncrementingColumn = incrementingColumn;
@@ -275,7 +321,7 @@ public class JdbcSourceTask extends SourceTask {
           validateNonNullable(mode, schemaPattern, tableOrQuery, tableIncrementingColumn, tableTimestampColumn);
         tableQueue.add(new TimestampIncrementingTableQuerier(
             queryMode, tableOrQuery, topicPrefix, tableTimestampColumn, tableIncrementingColumn,
-                offset, timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap));
+                offset, timestampDelayInterval, schemaPattern, mapNumerics,anonymizeMap,pkColumns,transformerMap,whitelistedColumns));
       }
     }
 

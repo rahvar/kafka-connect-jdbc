@@ -61,6 +61,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   private TimestampIncrementingOffset offset;
   private Map<String,String> anonymizeMap;
   private Map<String,Transformer> transformerMap;
+  private String whitelistedColumns;
 
   /*
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
@@ -77,8 +78,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
                                            String timestampColumn, String incrementingColumn,
                                            Map<String, Object> offsetMap, Long timestampDelay,
-                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap,Set pkResultSet,
-                                           Map<String,Transformer> transformerMap) {
+                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap,
+                                           Set pkResultSet,Map<String,Transformer> transformerMap, String whitelistedColumns) {
     super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
     this.timestampColumn = timestampColumn;
     this.incrementingColumn = incrementingColumn;
@@ -86,6 +87,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
     this.offset = TimestampIncrementingOffset.fromMap(offsetMap);
     this.anonymizeMap = anonymizeMap;
     this.transformerMap = transformerMap;
+    this.whitelistedColumns = whitelistedColumns;
   }
 
   @Override
@@ -101,7 +103,12 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
 
     switch (mode) {
       case TABLE:
-        builder.append("SELECT * FROM ");
+        if (this.whitelistedColumns == null) {
+          builder.append("SELECT * FROM ");
+        }
+        if (this.whitelistedColumns != null) {
+          builder.append("SELECT " + this.whitelistedColumns + " FROM ");
+        }
         builder.append(JdbcUtils.quoteString(name, quoteString));
         break;
       case QUERY:
