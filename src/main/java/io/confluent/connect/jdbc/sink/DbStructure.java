@@ -86,7 +86,6 @@ public class DbStructure {
     }
     log.info("DB Connection: ");
 
-//    dbDialect.getOrCreateEnums(connection);
 
     final String sql = dbDialect.getCreateQuery(tableName, fieldsMetadata.allFields.values());
     log.info("Creating table:{} with SQL: {}", tableName, sql);

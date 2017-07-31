@@ -16,7 +16,7 @@
 
 package io.confluent.connect.jdbc.source;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
@@ -24,7 +24,7 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
-import org.glassfish.jersey.uri.UriComponent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
