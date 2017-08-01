@@ -28,9 +28,12 @@ import java.util.Map;
 import java.util.Set;
 
 import io.confluent.connect.jdbc.sink.JdbcSinkConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FieldsMetadata {
 
+  private static final Logger log = LoggerFactory.getLogger(FieldsMetadata.class);
   public final Set<String> keyFieldNames;
   public final Set<String> nonKeyFieldNames;
   public final Map<String, SinkRecordField> allFields;
@@ -112,6 +115,7 @@ public class FieldsMetadata {
           }
           keyFieldNames.addAll(configuredPkFields);
 
+
           for (String fieldName : keyFieldNames) {
             final Schema fieldSchema = valueSchema.field(fieldName).schema();
             allFields.put(fieldName, new SinkRecordField(fieldSchema, fieldName, true));
@@ -127,7 +131,7 @@ public class FieldsMetadata {
               "Table '%s' doesn't have a primary key. %s.pk.fields must be set. ", tableName,tableName
           ));
         }
-          final Schema.Type keySchemaType = keySchema.type();
+        final Schema.Type keySchemaType = keySchema.type();
           if (keySchemaType.isPrimitive()) {
             if (configuredPkFields.size() != 1) {
               throw new ConnectException(String.format(
@@ -140,9 +144,11 @@ public class FieldsMetadata {
             allFields.put(fieldName, new SinkRecordField(keySchema, fieldName, true));
           } else if (keySchemaType == Schema.Type.STRUCT) {
             if (configuredPkFields.isEmpty()) {
+
               for (Field keyField : keySchema.fields()) {
                 keyFieldNames.add(keyField.name());
               }
+              //log.info("Key Fields are:"+keyFieldNames.toString());
             } else {
               for (String fieldName : configuredPkFields) {
                 final Field keyField = keySchema.field(fieldName);
