@@ -221,18 +221,18 @@ public class JdbcSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM, RETRY_BACKOFF_MS_DOC,
                     RETRIES_GROUP, 2, ConfigDef.Width.SHORT, RETRY_BACKOFF_MS_DISPLAY);
 
-    for(String prop: props.keySet()){
+    if(props!=null) {
+      for (String prop : props.keySet()) {
 
-      if(config.configKeys().containsKey(prop))
-        continue;
-      if(prop.endsWith(".pk.fields") ){
-        config.define(prop, ConfigDef.Type.LIST, ConfigDef.Importance.MEDIUM,"doc");
-      }
-      else if(prop.endsWith(".pk.mode")){
-        config.define(prop, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM,"doc");
-      }
-      else if(prop.endsWith(".insert.mode")){
-        config.define(prop,ConfigDef.Type.STRING,ConfigDef.Importance.MEDIUM,"doc");
+        if (config.configKeys().containsKey(prop))
+          continue;
+        if (prop.endsWith(".pk.fields")) {
+          config.define(prop, ConfigDef.Type.LIST, ConfigDef.Importance.MEDIUM, "doc");
+        } else if (prop.endsWith(".pk.mode")) {
+          config.define(prop, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM, "doc");
+        } else if (prop.endsWith(".insert.mode")) {
+          config.define(prop, ConfigDef.Type.STRING, ConfigDef.Importance.MEDIUM, "doc");
+        }
       }
     }
 

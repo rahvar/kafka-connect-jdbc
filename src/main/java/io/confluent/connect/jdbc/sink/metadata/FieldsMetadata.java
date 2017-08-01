@@ -114,7 +114,7 @@ public class FieldsMetadata {
             }
           }
           keyFieldNames.addAll(configuredPkFields);
-          log.info("Manually configured Pk: "+configuredPkFields.toString() );
+
 
           for (String fieldName : keyFieldNames) {
             final Schema fieldSchema = valueSchema.field(fieldName).schema();
