@@ -104,7 +104,7 @@ public class JdbcSourceConnector extends SourceConnector {
       configProperties = properties;
       config = new JdbcSourceConnectorConfig(configProperties);
 
-      setupKeyStore();
+//      setupKeyStore();
     } catch (ConfigException e) {
 
       throw new ConnectException("Couldn't start JdbcSourceConnector due to configuration "

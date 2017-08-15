@@ -20,14 +20,13 @@ public class HashAnonymizer implements Transformer<Object>{
     private HashAnonymizer () {
     }
 
-    public static Transformer init() {
+    public static Transformer init(String keystorePass) {
         HashAnonymizer anonymizer = null;
         try {
             KeyStore ks = KeyStore.getInstance("JCEKS");
-            char[] password = "RedL0ck!Anon".toCharArray();
+            char[] password = keystorePass.toCharArray();
             java.io.FileInputStream fis = null;
-
-            fis = new java.io.FileInputStream("ANON_KEYSTORE_FILE");
+            fis = new java.io.FileInputStream("/tmp/anon_keystore/ANON_KEYSTORE.keystore");
             ks.load(fis, password);
             KeyStore.ProtectionParameter protParam =
                     new KeyStore.PasswordProtection(password);

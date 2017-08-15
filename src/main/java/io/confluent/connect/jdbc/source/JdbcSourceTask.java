@@ -69,6 +69,15 @@ public class JdbcSourceTask extends SourceTask {
   public Map<String,Transformer> loadAnonymizerClasses(JdbcSourceConnectorConfig config) {
     Map<String,Transformer> anonymizeMapping = null;
     if (config.originals().containsKey("transformers")) {
+      try {
+        if (!config.originals().containsKey("anonymization.keystore.pass")) {
+          throw new Exception("Keystore password parameter not specified. (anonymization.keystore.pass)");
+        }
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+        return anonymizeMapping;
+      }
       String transformerString = (String) config.originals().get("transformers");
       String[] transformersList = transformerString.split(",");
       anonymizeMapping = new HashMap<String,Transformer>();
@@ -76,8 +85,8 @@ public class JdbcSourceTask extends SourceTask {
         Class<?> c = null;
         try {
           c = Class.forName(transformer.trim());
-          Method method = c.getDeclaredMethod("init");
-          Transformer anonObj = (Transformer) method.invoke(null);
+          Method method = c.getDeclaredMethod("init",String.class);
+          Transformer anonObj = (Transformer) method.invoke(null,(String)config.originals().get("anonymization.keystore.pass"));
           anonymizeMapping.put(c.getSimpleName(),anonObj);
         } catch (ClassNotFoundException e) {
           e.printStackTrace();
