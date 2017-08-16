@@ -16,7 +16,6 @@
 
 package io.confluent.connect.jdbc.source;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
@@ -89,8 +88,16 @@ public class DataConverter {
         String colType = metadata.getColumnTypeName(col);
         String anonymizeKey = fieldName;
         Boolean anonymizeCol = false;
-        int[] supportedTypes = new int[] {Types.CHAR, Types.VARCHAR, Types.LONGVARCHAR, Types.NCHAR, Types.NVARCHAR,
-                                          Types.LONGNVARCHAR,Types.ARRAY, Types.OTHER};
+        Map<Integer,Integer> supportedTypes = new HashMap<Integer, Integer>();
+        supportedTypes.put(Types.CHAR,1);
+        supportedTypes.put(Types.VARCHAR,1);
+        supportedTypes.put(Types.LONGVARCHAR,1);
+        supportedTypes.put(Types.NCHAR,1);
+        supportedTypes.put(Types.NVARCHAR,1);
+        supportedTypes.put(Types.LONGNVARCHAR,1);
+        supportedTypes.put(Types.ARRAY,1);
+        supportedTypes.put(Types.OTHER,1);
+
         int colTypeInt = metadata.getColumnType(col);
         if (colType.equals("jsonb")) {
           if (anonymizeMap!=null) {
@@ -111,7 +118,7 @@ public class DataConverter {
           anonymizeKey = anonymizeKey + "!";
         }
 
-        if (anonymizeCol && ArrayUtils.contains(supportedTypes,colTypeInt)) {
+        if (anonymizeCol && supportedTypes.containsKey(colTypeInt)) {
           Transformer transfomerClass = transformerMap.get(anonymizeMap.get(anonymizeKey));
           convertFieldAnonymize(resultSet, col, metadata.getColumnType(col), struct,
                   fieldName, mapNumerics, colType,anonymizeKey,transfomerClass);

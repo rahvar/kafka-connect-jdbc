@@ -73,6 +73,9 @@ public class JdbcSourceTask extends SourceTask {
         if (!config.originals().containsKey("anonymization.keystore.pass")) {
           throw new Exception("Keystore password parameter not specified. (anonymization.keystore.pass)");
         }
+        if (!config.originals().containsKey("anonymization.keystore.path")) {
+          throw new Exception("Keystore path parameter not specified. (anonymization.keystore.path)");
+        }
       }
       catch (Exception e) {
         e.printStackTrace();
@@ -85,8 +88,9 @@ public class JdbcSourceTask extends SourceTask {
         Class<?> c = null;
         try {
           c = Class.forName(transformer.trim());
-          Method method = c.getDeclaredMethod("init",String.class);
-          Transformer anonObj = (Transformer) method.invoke(null,(String)config.originals().get("anonymization.keystore.pass"));
+          Method method = c.getDeclaredMethod("init",String.class,String.class);
+          Transformer anonObj = (Transformer) method.invoke(null,(String) config.originals().get("anonymization.keystore.pass"),
+                                                            (String) config.originals().get("anonymization.keystore.path"));
           anonymizeMapping.put(c.getSimpleName(),anonObj);
         } catch (ClassNotFoundException e) {
           e.printStackTrace();
