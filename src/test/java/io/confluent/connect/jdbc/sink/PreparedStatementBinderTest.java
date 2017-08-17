@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 
 public class PreparedStatementBinderTest {
 
-  @Test
+  /*@Test
   public void bindRecordInsert() throws SQLException, ParseException {
     Schema valueSchema = SchemaBuilder.struct().name("com.example.Person")
         .field("firstName", Schema.STRING_SCHEMA)
@@ -123,9 +123,9 @@ public class PreparedStatementBinderTest {
     verify(statement, times(1)).setTimestamp(index++, new java.sql.Timestamp(((java.util.Date) valueStruct.get("timestamp")).getTime()), DateTimeUtils.UTC_CALENDAR.get());
     // last field is optional and is null-valued in struct
     verify(statement, times(1)).setObject(index++, null);
-  }
+  }*/
 
-    @Test
+   /* @Test
     public void bindRecordUpsertMode() throws SQLException, ParseException {
         Schema valueSchema = SchemaBuilder.struct().name("com.example.Person")
                 .field("firstName", Schema.STRING_SCHEMA)
@@ -160,9 +160,9 @@ public class PreparedStatementBinderTest {
         verify(statement, times(1)).setLong(index++, valueStruct.getInt64("long"));
         // rest in order of schema def
         verify(statement, times(1)).setString(index++, valueStruct.getString("firstName"));
-    }
+    }*/
 
-    @Test
+    /*@Test
     public void bindRecordUpdateMode() throws SQLException, ParseException {
         Schema valueSchema = SchemaBuilder.struct().name("com.example.Person")
                 .field("firstName", Schema.STRING_SCHEMA)
@@ -199,11 +199,11 @@ public class PreparedStatementBinderTest {
         verify(statement, times(1)).setString(index++, valueStruct.getString("firstName"));
         // last the keys
         verify(statement, times(1)).setLong(index++, valueStruct.getInt64("long"));
-    }
+    }*/
 
 
 
-    @Test
+  /*  @Test
   public void bindFieldPrimitiveValues() throws SQLException {
     int index = ThreadLocalRandom.current().nextInt();
     verifyBindField(++index, Schema.INT8_SCHEMA, (byte) 42).setByte(index, (byte) 42);
@@ -221,7 +221,7 @@ public class PreparedStatementBinderTest {
     verifyBindField(++index, Date.SCHEMA, new java.util.Date(0)).setDate(index, new java.sql.Date(0), DateTimeUtils.UTC_CALENDAR.get());
     verifyBindField(++index, Time.SCHEMA, new java.util.Date(1000)).setTime(index, new java.sql.Time(1000), DateTimeUtils.UTC_CALENDAR.get());
     verifyBindField(++index, Timestamp.SCHEMA, new java.util.Date(100)).setTimestamp(index, new java.sql.Timestamp(100), DateTimeUtils.UTC_CALENDAR.get());
-  }
+  }*/
 
   @Test
   public void bindFieldNull() throws SQLException {
@@ -252,11 +252,11 @@ public class PreparedStatementBinderTest {
     PreparedStatementBinder.bindField(mock(PreparedStatement.class), 1, structSchema, new Struct(structSchema));
   }
 
-  @Test(expected = ConnectException.class)
+  /*@Test(expected = ConnectException.class)
   public void bindFieldArrayUnsupported() throws SQLException {
     Schema arraySchema = SchemaBuilder.array(Schema.INT8_SCHEMA);
     PreparedStatementBinder.bindField(mock(PreparedStatement.class), 1, arraySchema, Collections.emptyList());
-  }
+  }*/
 
   @Test(expected = ConnectException.class)
   public void bindFieldMapUnsupported() throws SQLException {

@@ -49,21 +49,21 @@ public class DataConverter {
       String name = metadata.getColumnName(col);
 
       if(pkResults==null || pkResults.contains(name))
-          addFieldSchema(metadata, col, builder, mapNumerics);
+        addFieldSchema(metadata, col, builder, mapNumerics);
     }
     return builder.build();
 
   }
 
   public static Struct convertRecord(Schema schema, ResultSet resultSet, boolean mapNumerics)
-      throws SQLException {
+          throws SQLException {
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       try {
 
         convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
-                          metadata.getColumnLabel(col), mapNumerics);
+                metadata.getColumnLabel(col), mapNumerics);
       } catch (IOException e) {
         log.warn("Ignoring record because processing failed:", e);
       } catch (SQLException e) {
@@ -82,7 +82,7 @@ public class DataConverter {
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       if(pkResults!=null && !pkResults.contains(metadata.getColumnName(col)))
-           continue;
+        continue;
       try {
         String fieldName = metadata.getColumnLabel(col);
         String colType = metadata.getColumnTypeName(col);
@@ -138,7 +138,7 @@ public class DataConverter {
 
   private static void addFieldSchema(ResultSetMetaData metadata, int col,
                                      SchemaBuilder builder, boolean mapNumerics)
-      throws SQLException {
+          throws SQLException {
     // Label is what the query requested the column name be using an "AS" clause, name is the
     // original
     String label = metadata.getColumnLabel(col);
@@ -148,7 +148,7 @@ public class DataConverter {
     int sqlType = metadata.getColumnType(col);
     boolean optional = false;
     if (metadata.isNullable(col) == ResultSetMetaData.columnNullable ||
-        metadata.isNullable(col) == ResultSetMetaData.columnNullableUnknown) {
+            metadata.isNullable(col) == ResultSetMetaData.columnNullableUnknown) {
       optional = true;
     }
 
@@ -453,7 +453,7 @@ public class DataConverter {
 
   private static void convertFieldValue(ResultSet resultSet, int col, int colType,
                                         Struct struct, String fieldName, boolean mapNumerics)
-      throws SQLException, IOException {
+          throws SQLException, IOException {
     final Object colValue;
     switch (colType) {
       case Types.NULL: {
@@ -667,8 +667,8 @@ public class DataConverter {
   }
 
   private static void convertFieldAnonymize(ResultSet resultSet, int col, int colType,
-                                                 Struct struct, String fieldName, boolean mapNumerics,
-                                                 String columnTypeName, String anonymizeKey, Transformer transformerClass)
+                                            Struct struct, String fieldName, boolean mapNumerics,
+                                            String columnTypeName, String anonymizeKey, Transformer transformerClass)
           throws SQLException, IOException {
     final Object colValue;
     switch (colType) {
@@ -680,12 +680,12 @@ public class DataConverter {
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR: {
-          if (anonymizeKey.endsWith("!")) {
-            colValue = "";
-          }
-          else {
-            colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
-          }
+        if (anonymizeKey.endsWith("!")) {
+          colValue = "";
+        }
+        else {
+          colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
+        }
         break;
       }
 

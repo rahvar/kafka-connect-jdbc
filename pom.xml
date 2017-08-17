@@ -51,7 +51,7 @@
 
     <properties>
         <confluent.version>${project.version}</confluent.version>
-        <kafka.version>0.11.1.0-SNAPSHOT</kafka.version>
+        <kafka.version>0.10.2.1</kafka.version>
         <junit.version>4.12</junit.version>
         <easymock.version>3.0</easymock.version>
         <powermock.version>1.6.2</powermock.version>
@@ -200,7 +200,7 @@
                     <argLine>-Djava.awt.headless=true</argLine>
                 </configuration>
             </plugin>
-            <plugin>
+           <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>2.17</version>
@@ -221,7 +221,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin> -->
         </plugins>
         <resources>
             <resource>

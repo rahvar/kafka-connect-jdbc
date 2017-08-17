@@ -16,7 +16,10 @@
 
 package io.confluent.connect.jdbc;
 
-import io.confluent.connect.jdbc.source.*;
+import io.confluent.connect.jdbc.source.JdbcSourceTask;
+import io.confluent.connect.jdbc.source.JdbcSourceTaskConfig;
+import io.confluent.connect.jdbc.source.TableMonitorThread;
+import io.confluent.connect.jdbc.source.JdbcSourceConnectorConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
