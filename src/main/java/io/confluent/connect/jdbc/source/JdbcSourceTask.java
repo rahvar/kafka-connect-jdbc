@@ -194,7 +194,7 @@ public class JdbcSourceTask extends SourceTask {
         log.info("Table specific mode not defined. Reverting to default");
       }
 
-      log.info("Mode for table: "+tableOrQuery+" is "+tableMode);
+      //log.info("Mode for table: "+tableOrQuery+" is "+tableMode);
 
       // Store all column names to be anonymized in anonymizeList
       anonymizeMap = null;
