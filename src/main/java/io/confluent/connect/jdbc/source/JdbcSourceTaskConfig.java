@@ -71,6 +71,12 @@ public class JdbcSourceTaskConfig extends JdbcSourceConnectorConfig {
       else if ((prop.endsWith(".whitelist.column.name"))) {
         config.define(prop,Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
       }
+      else if ((prop.equals("anonymization.keystore.pass"))) {
+        config.define(prop,Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
+      }
+      else if ((prop.equals("anonymization.keystore.path"))) {
+        config.define(prop,Type.STRING,"",Importance.MEDIUM, "Documentation",MODE_GROUP,3, ConfigDef.Width.MEDIUM,"");
+      }
     }
 
     return config;
