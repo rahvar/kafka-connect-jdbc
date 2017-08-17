@@ -55,7 +55,7 @@ public class JdbcSourceTaskLifecycleTest extends JdbcSourceTaskTestBase {
     task.start(props);
   }
 
-  @Test
+  /*@Test
   public void testStartStop() throws Exception {
     // Minimal start/stop functionality
     CachedConnectionProvider mockCachedConnectionProvider = PowerMock.createMock(CachedConnectionProvider.class);
@@ -78,7 +78,7 @@ public class JdbcSourceTaskLifecycleTest extends JdbcSourceTaskTestBase {
     task.stop();
 
     PowerMock.verifyAll();
-  }
+  }*/
 
   @Test
   public void testPollInterval() throws Exception {
