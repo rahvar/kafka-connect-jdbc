@@ -37,7 +37,7 @@ import io.confluent.connect.jdbc.util.JdbcUtils;
 public class BulkTableQuerier extends TableQuerier {
   private static final Logger log = LoggerFactory.getLogger(BulkTableQuerier.class);
 
-  private Map<String,String> anonymizeMap;
+  private Map<String, String> anonymizeMap;
   private Map<String, Transformer> transformerMap;
   private String whitelistedColumns;
 
@@ -47,10 +47,10 @@ public class BulkTableQuerier extends TableQuerier {
   }*/
 
   public BulkTableQuerier(QueryMode mode, String name, String schemaPattern,
-                          String topicPrefix, boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResultSet,
-                          Map<String,Transformer> transformerMap, String whitelistedColumns) {
+                          String topicPrefix, boolean mapNumerics, Map<String, String> anonymizeMap, Set<String> pkResultSet,
+                          Map<String, Transformer> transformerMap, String whitelistedColumns) {
 
-    super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
+    super(mode, name, topicPrefix, schemaPattern, mapNumerics, pkResultSet);
     this.anonymizeMap = anonymizeMap;
     this.transformerMap = transformerMap;
     this.whitelistedColumns = whitelistedColumns;
@@ -69,12 +69,12 @@ public class BulkTableQuerier extends TableQuerier {
           queryString = "SELECT " + this.whitelistedColumns + " FROM " + JdbcUtils.quoteString(name, quoteString);
         }
         log.debug("{} prepared SQL query: {}", this, queryString);
-        stmt = db.prepareStatement(queryString,ResultSet.TYPE_SCROLL_SENSITIVE,
+        stmt = db.prepareStatement(queryString, ResultSet.TYPE_SCROLL_SENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
         break;
       case QUERY:
         log.debug("{} prepared SQL query: {}", this, query);
-        stmt = db.prepareStatement(query,ResultSet.TYPE_SCROLL_SENSITIVE,
+        stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
         break;
     }
@@ -82,15 +82,15 @@ public class BulkTableQuerier extends TableQuerier {
 
   @Override
   protected ResultSet executeQuery() throws SQLException {
-    log.info("Final Bulk query is: " + stmt.toString()+"\n\n");
+    log.info("Final Bulk query is: " + stmt.toString() + "\n\n");
     return stmt.executeQuery();
   }
 
   @Override
   public SourceRecord extractRecord() throws SQLException {
 
-    Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics,anonymizeMap,null,transformerMap);
-    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults,transformerMap);
+    Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap, null, transformerMap);
+    Struct keyRecord = DataConverter.convertRecord(keySchema, resultSet, mapNumerics, anonymizeMap, pkResults, transformerMap);
 
 
     // TODO: key from primary key? partition?
@@ -111,11 +111,11 @@ public class BulkTableQuerier extends TableQuerier {
     }
 
 
-    if(pkResults.size()>0){
+    if (pkResults.size() > 0) {
       //String keyCol = (String)pkResults.iterator().next();
       //Object key = record.get(keyCol);
 
-      return new SourceRecord(partition, null, topic,keyRecord.schema(),keyRecord, record.schema(), record);
+      return new SourceRecord(partition, null, topic, keyRecord.schema(), keyRecord, record.schema(), record);
     }
     return new SourceRecord(partition, null, topic, record.schema(), record);
   }

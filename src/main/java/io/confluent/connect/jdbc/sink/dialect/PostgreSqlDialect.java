@@ -16,14 +16,12 @@
 
 package io.confluent.connect.jdbc.sink.dialect;
 
-import io.confluent.connect.jdbc.source.JdbcSourceTask;
 import io.confluent.connect.jdbc.source.PostgresTypes;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
-import io.confluent.connect.jdbc.source.PostgresTypes.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,17 +99,15 @@ public class PostgreSqlDialect extends DbDialect {
     nCopiesToBuilder(builder, ",", "?", cols.size() + keyCols.size());
     builder.append(") ON CONFLICT (");
     joinToBuilder(builder, ",", keyCols, escaper());
-    if((cols.size()+keyCols.size())!=keyCols.size()) {
+    if ((cols.size() + keyCols.size()) != keyCols.size()) {
       builder.append(") DO UPDATE SET ");
-    }
-    else{
+    } else {
       builder.append(") DO NOTHING");
     }
     joinToBuilder(
             builder,
             ",",
-            cols,
-            new StringBuilderUtil.Transform<String>() {
+            cols, new StringBuilderUtil.Transform<String>() {
               @Override
               public void apply(StringBuilder builder, String col) {
                 builder.append(escaped(col)).append("=EXCLUDED.").append(escaped(col));

@@ -110,7 +110,7 @@ public class PreparedStatementBinder {
       }
 
       case RECORD_KEY: {
-        if (schemaPair.keySchema!=null ) {
+        if (schemaPair.keySchema != null) {
           if (schemaPair.keySchema.type().isPrimitive()) {
             assert fieldsMetadata.keyFieldNames.size() == 1;
             bindField(index++, schemaPair.keySchema, record.key());
@@ -172,7 +172,7 @@ public class PreparedStatementBinder {
           case ARRAY:
           case STRING:
 //            statement.setString(index, (String) value);
-            statement.setObject(index,value, Types.OTHER);
+            statement.setObject(index, value, Types.OTHER);
             break;
           case BYTES:
             final byte[] bytes;

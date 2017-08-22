@@ -1,11 +1,12 @@
-package io.confluent.connect.jdbc.source;
-
 /**
- * Created by shawnvarghese on 6/9/17.
- */
+ * Copyright 2015 RedLock Inc.
+ *
+ **/
+
+package io.confluent.connect.jdbc.source;
 
 public interface Transformer<T> {
 
-    public T transform(int type, T value, String[] fieldArgs);
+  T transform(int type, T value, String[] fieldArgs);
 
 }

@@ -25,8 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.sql.*;
-import java.util.ArrayList;
+//import java.sql.*;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Connection;
+import java.sql.Timestamp;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -59,8 +64,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   private String incrementingColumn;
   private long timestampDelay;
   private TimestampIncrementingOffset offset;
-  private Map<String,String> anonymizeMap;
-  private Map<String,Transformer> transformerMap;
+  private Map<String, String> anonymizeMap;
+  private Map<String, Transformer> transformerMap;
   private String whitelistedColumns;
 
   /*
@@ -78,9 +83,9 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
   public TimestampIncrementingTableQuerier(QueryMode mode, String name, String topicPrefix,
                                            String timestampColumn, String incrementingColumn,
                                            Map<String, Object> offsetMap, Long timestampDelay,
-                                           String schemaPattern, boolean mapNumerics, Map<String,String> anonymizeMap,
-                                           Set pkResultSet,Map<String,Transformer> transformerMap, String whitelistedColumns) {
-    super(mode, name, topicPrefix, schemaPattern, mapNumerics,pkResultSet);
+                                           String schemaPattern, boolean mapNumerics, Map<String, String> anonymizeMap,
+                                           Set pkResultSet, Map<String, Transformer> transformerMap, String whitelistedColumns) {
+    super(mode, name, topicPrefix, schemaPattern, mapNumerics, pkResultSet);
     this.timestampColumn = timestampColumn;
     this.incrementingColumn = incrementingColumn;
     this.timestampDelay = timestampDelay;
@@ -165,7 +170,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
     }
     String queryString = builder.toString();
     log.debug("{} prepared SQL query: {}", this, queryString);
-    stmt = db.prepareStatement(queryString,ResultSet.TYPE_SCROLL_SENSITIVE,
+    stmt = db.prepareStatement(queryString, ResultSet.TYPE_SCROLL_SENSITIVE,
             ResultSet.CONCUR_UPDATABLE);
   }
 
@@ -177,7 +182,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
     // in-built mechanism to identify this
     ResultSetMetaData columns = stmt.getMetaData();
     String colType = null;
-    for (int i = 1;i<=columns.getColumnCount();i++)
+    for (int i = 1; i <= columns.getColumnCount(); i++)
       if (columns.getColumnName(i).equals(timestampColumn)) {
         colType = columns.getColumnTypeName(i);
         break;
@@ -193,8 +198,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
         stmt.setLong(1, endTime.getTime());
         stmt.setLong(2, tsOffset.getTime());
         stmt.setLong(4, tsOffset.getTime());
-      }
-      else {
+      } else {
         stmt.setTimestamp(1, endTime, DateTimeUtils.UTC_CALENDAR.get());
         stmt.setTimestamp(2, tsOffset, DateTimeUtils.UTC_CALENDAR.get());
         stmt.setTimestamp(4, tsOffset, DateTimeUtils.UTC_CALENDAR.get());
@@ -217,8 +221,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
       if (colType.equals("int8")) {
         stmt.setLong(1, tsOffset.getTime());
         stmt.setLong(2, endTime.getTime());
-      }
-      else {
+      } else {
         stmt.setTimestamp(1, tsOffset, DateTimeUtils.UTC_CALENDAR.get());
         stmt.setTimestamp(2, endTime, DateTimeUtils.UTC_CALENDAR.get());
       }
@@ -228,15 +231,15 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
                 DateTimeUtils.formatUtcTimestamp(endTime));
     }
 
-    log.info("Final Single query is: " + stmt.toString()+"\n\n");
+    log.info("Final Single query is: " + stmt.toString() + "\n\n");
 
     return stmt.executeQuery();
   }
 
   @Override
   public SourceRecord extractRecord() throws SQLException {
-    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap,null,transformerMap);
-    Struct keyRecord = DataConverter.convertRecord(keySchema,resultSet,mapNumerics,anonymizeMap,pkResults,transformerMap);
+    final Struct record = DataConverter.convertRecord(schema, resultSet, mapNumerics, anonymizeMap, null, transformerMap);
+    Struct keyRecord = DataConverter.convertRecord(keySchema, resultSet, mapNumerics, anonymizeMap, pkResults, transformerMap);
 
     offset = extractOffset(schema, record);
     // TODO: Key?
@@ -257,8 +260,8 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
     }
 
 
-    if(pkResults.size()>0){
-      return new SourceRecord(partition,offset.toMap(),topic,keyRecord.schema(),keyRecord,record.schema(),record);
+    if (pkResults.size() > 0) {
+      return new SourceRecord(partition, offset.toMap(), topic, keyRecord.schema(), keyRecord, record.schema(), record);
     }
 
     return new SourceRecord(partition, offset.toMap(), topic, record.schema(), record);
@@ -272,8 +275,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier {
       // extractedTimestamp cast as Long if timestamp column is of epoch time.
       if (record.get(timestampColumn).getClass().getName().toString().equals("java.lang.Long")) {
         extractedTimestamp = new Timestamp((Long) record.get(timestampColumn));
-      }
-      else {
+      } else {
         extractedTimestamp = (Timestamp) record.get(timestampColumn);
       }
       Timestamp timestampOffset = offset.getTimestampOffset();
