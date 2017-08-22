@@ -17,7 +17,6 @@
 package io.confluent.connect.jdbc.source;
 
 import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.source.SourceRecord;
 
 import java.sql.Connection;
@@ -52,7 +51,7 @@ abstract class TableQuerier implements Comparable<TableQuerier> {
   protected Schema keySchema;
 
   public TableQuerier(QueryMode mode, String nameOrQuery, String topicPrefix,
-                      String schemaPattern, boolean mapNumerics,Set pkResults) {
+                      String schemaPattern, boolean mapNumerics, Set pkResults) {
     this.mode = mode;
     this.schemaPattern = schemaPattern;
     this.name = mode.equals(QueryMode.TABLE) ? nameOrQuery : null;
@@ -85,8 +84,8 @@ abstract class TableQuerier implements Comparable<TableQuerier> {
     if (resultSet == null) {
       stmt = getOrCreatePreparedStatement(db);
       resultSet = executeQuery();
-      schema = DataConverter.convertSchema(name, resultSet.getMetaData(), mapNumerics,null);
-      keySchema = DataConverter.convertSchema(name,resultSet.getMetaData(),mapNumerics,pkResults);
+      schema = DataConverter.convertSchema(name, resultSet.getMetaData(), mapNumerics, null);
+      keySchema = DataConverter.convertSchema(name, resultSet.getMetaData(), mapNumerics, pkResults);
     }
   }
 

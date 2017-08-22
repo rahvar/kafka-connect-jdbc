@@ -128,47 +128,48 @@ public class FieldsMetadata {
       case RECORD_KEY: {
         if (keySchema == null) {
           throw new ConnectException(String.format(
-              "Table '%s' doesn't have a primary key. %s.pk.fields must be set. ", tableName,tableName
+              "Table '%s' doesn't have a primary key. %s.pk.fields must be set. ", tableName, tableName
           ));
         }
         final Schema.Type keySchemaType = keySchema.type();
-          if (keySchemaType.isPrimitive()) {
-            if (configuredPkFields.size() != 1) {
-              throw new ConnectException(String.format(
+        if (keySchemaType.isPrimitive()) {
+          if (configuredPkFields.size() != 1) {
+            throw new ConnectException(String.format(
                       "Need exactly one PK column defined since the key schema for records is a primitive type, defined columns are: %s",
                       configuredPkFields
-              ));
-            }
-            final String fieldName = configuredPkFields.get(0);
-            keyFieldNames.add(fieldName);
-            allFields.put(fieldName, new SinkRecordField(keySchema, fieldName, true));
-          } else if (keySchemaType == Schema.Type.STRUCT) {
-            if (configuredPkFields.isEmpty()) {
+            ));
+          }
+          final String fieldName = configuredPkFields.get(0);
+          keyFieldNames.add(fieldName);
+          allFields.put(fieldName, new SinkRecordField(keySchema, fieldName, true));
+        } else if (keySchemaType == Schema.Type.STRUCT) {
 
-              for (Field keyField : keySchema.fields()) {
-                keyFieldNames.add(keyField.name());
-              }
+          if (configuredPkFields.isEmpty()) {
+
+            for (Field keyField : keySchema.fields()) {
+              keyFieldNames.add(keyField.name());
+            }
               //log.info("Key Fields are:"+keyFieldNames.toString());
-            } else {
-              for (String fieldName : configuredPkFields) {
-                final Field keyField = keySchema.field(fieldName);
-                if (keyField == null) {
-                  throw new ConnectException(String.format(
+          } else {
+            for (String fieldName : configuredPkFields) {
+              final Field keyField = keySchema.field(fieldName);
+              if (keyField == null) {
+                throw new ConnectException(String.format(
                           "PK mode for table '%s' is %s with configured PK fields %s, but record key schema does not contain field: %s",
                           tableName, pkMode, configuredPkFields, fieldName
-                  ));
-                }
+                ));
               }
-              keyFieldNames.addAll(configuredPkFields);
             }
-            for (String fieldName : keyFieldNames) {
-              final Schema fieldSchema = keySchema.field(fieldName).schema();
-              allFields.put(fieldName, new SinkRecordField(fieldSchema, fieldName, true));
-            }
-          } else {
-            throw new ConnectException("Key schema must be primitive type or Struct, but is of type: " + keySchemaType);
+            keyFieldNames.addAll(configuredPkFields);
           }
-          break;
+          for (String fieldName : keyFieldNames) {
+            final Schema fieldSchema = keySchema.field(fieldName).schema();
+            allFields.put(fieldName, new SinkRecordField(fieldSchema, fieldName, true));
+          }
+        } else {
+          throw new ConnectException("Key schema must be primitive type or Struct, but is of type: " + keySchemaType);
+        }
+        break;
 
       }
 

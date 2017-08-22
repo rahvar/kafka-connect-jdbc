@@ -20,8 +20,13 @@ import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+//import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.Map;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 import io.confluent.connect.jdbc.util.StringUtils;
 import org.apache.kafka.common.config.types.Password;
@@ -172,7 +177,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   public final List<String> pkFields;
   public final Set<String> fieldsWhitelist;
 
-  public static ConfigDef modifyConfig(Map<String, String> props){
+  public static ConfigDef modifyConfig(Map<String, String> props) {
     //String topicInfo =(String) props.get("topic");
 
     ConfigDef config = new ConfigDef()
@@ -221,7 +226,7 @@ public class JdbcSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM, RETRY_BACKOFF_MS_DOC,
                     RETRIES_GROUP, 2, ConfigDef.Width.SHORT, RETRY_BACKOFF_MS_DISPLAY);
 
-    if(props!=null) {
+    if (props != null) {
       for (String prop : props.keySet()) {
 
         if (config.configKeys().containsKey(prop))
@@ -241,7 +246,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   }
 
   public JdbcSinkConfig(Map<?, ?> props) {
-    super(modifyConfig((Map<String,String>)props), props);
+    super(modifyConfig((Map<String, String>) props), props);
 
     connectionUrl = getString(CONNECTION_URL);
     connectionUser = getString(CONNECTION_USER);

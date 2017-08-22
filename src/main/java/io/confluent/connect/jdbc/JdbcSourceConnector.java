@@ -89,8 +89,7 @@ public class JdbcSourceConnector extends SourceConnector {
           fos.close();
         }
       }
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       log.info("Exception in keystore setup");
       e.printStackTrace();
     }
