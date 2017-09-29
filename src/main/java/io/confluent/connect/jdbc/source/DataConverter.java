@@ -29,8 +29,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
-import java.sql.*;
-import java.util.*;
+//import java.sql.*;
+import java.sql.ResultSetMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.sql.SQLXML;
+import java.sql.Clob;
+import java.sql.Blob;
+
+import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 import io.confluent.connect.jdbc.util.DateTimeUtils;
 
@@ -41,14 +51,14 @@ import io.confluent.connect.jdbc.util.DateTimeUtils;
 public class DataConverter {
   private static final Logger log = LoggerFactory.getLogger(JdbcSourceTask.class);
 
-  public static Schema convertSchema(String tableName,ResultSetMetaData metadata,boolean mapNumerics,Set<String> pkResults)
+  public static Schema convertSchema(String tableName, ResultSetMetaData metadata, boolean mapNumerics, Set<String> pkResults)
           throws SQLException {
 
     SchemaBuilder builder = SchemaBuilder.struct().name(tableName);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
       String name = metadata.getColumnName(col);
 
-      if(pkResults==null || pkResults.contains(name))
+      if (pkResults == null || pkResults.contains(name))
         addFieldSchema(metadata, col, builder, mapNumerics);
     }
     return builder.build();
@@ -74,33 +84,33 @@ public class DataConverter {
   }
 
   public static Struct convertRecord(Schema schema, ResultSet resultSet,
-                                     boolean mapNumerics, Map<String,String> anonymizeMap,Set<String> pkResults,
-                                     Map<String,Transformer> transformerMap)
+                                     boolean mapNumerics, Map<String, String> anonymizeMap, Set<String> pkResults,
+                                     Map<String, Transformer> transformerMap)
           throws SQLException {
 
     ResultSetMetaData metadata = resultSet.getMetaData();
     Struct struct = new Struct(schema);
     for (int col = 1; col <= metadata.getColumnCount(); col++) {
-      if(pkResults!=null && !pkResults.contains(metadata.getColumnName(col)))
+      if (pkResults != null && !pkResults.contains(metadata.getColumnName(col)))
         continue;
       try {
         String fieldName = metadata.getColumnLabel(col);
         String colType = metadata.getColumnTypeName(col);
         String anonymizeKey = fieldName;
         Boolean anonymizeCol = false;
-        Map<Integer,Integer> supportedTypes = new HashMap<Integer, Integer>();
-        supportedTypes.put(Types.CHAR,1);
-        supportedTypes.put(Types.VARCHAR,1);
-        supportedTypes.put(Types.LONGVARCHAR,1);
-        supportedTypes.put(Types.NCHAR,1);
-        supportedTypes.put(Types.NVARCHAR,1);
-        supportedTypes.put(Types.LONGNVARCHAR,1);
-        supportedTypes.put(Types.ARRAY,1);
-        supportedTypes.put(Types.OTHER,1);
+        Map<Integer, Integer> supportedTypes = new HashMap<Integer, Integer>();
+        supportedTypes.put(Types.CHAR, 1);
+        supportedTypes.put(Types.VARCHAR, 1);
+        supportedTypes.put(Types.LONGVARCHAR, 1);
+        supportedTypes.put(Types.NCHAR, 1);
+        supportedTypes.put(Types.NVARCHAR, 1);
+        supportedTypes.put(Types.LONGNVARCHAR, 1);
+        supportedTypes.put(Types.ARRAY, 1);
+        supportedTypes.put(Types.OTHER, 1);
 
         int colTypeInt = metadata.getColumnType(col);
         if (colType.equals("jsonb")) {
-          if (anonymizeMap!=null) {
+          if (anonymizeMap != null) {
             for (String key : anonymizeMap.keySet()) {
               if (key.startsWith(fieldName)) {
                 anonymizeCol = true;
@@ -109,11 +119,9 @@ public class DataConverter {
               }
             }
           }
-        }
-        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(fieldName)) {
+        } else if (anonymizeMap != null && anonymizeMap.keySet().contains(fieldName)) {
           anonymizeCol = true;
-        }
-        else if (anonymizeMap!=null && anonymizeMap.keySet().contains(fieldName + "!")) {
+        } else if (anonymizeMap != null && anonymizeMap.keySet().contains(fieldName + "!")) {
           anonymizeCol = true;
           anonymizeKey = anonymizeKey + "!";
         }
@@ -121,9 +129,8 @@ public class DataConverter {
         if (anonymizeCol && supportedTypes.containsKey(colTypeInt)) {
           Transformer transfomerClass = transformerMap.get(anonymizeMap.get(anonymizeKey));
           convertFieldAnonymize(resultSet, col, metadata.getColumnType(col), struct,
-                  fieldName, mapNumerics, colType,anonymizeKey,transfomerClass);
-        }
-        else {
+                  fieldName, mapNumerics, colType, anonymizeKey, transfomerClass);
+        } else {
           convertFieldValue(resultSet, col, metadata.getColumnType(col), struct,
                   metadata.getColumnLabel(col), mapNumerics);
         }
@@ -362,73 +369,55 @@ public class DataConverter {
       }
 
       case Types.ARRAY:
-        if(metadata.getColumnTypeName(col).equals("_text")) {
-
+        if (metadata.getColumnTypeName(col).equals("_text")) {
           SchemaBuilder textArrayBuilder = PostgresTypes.TextArrayBuilder();
-          if(optional) {
+          if (optional) {
             builder.field(fieldName, textArrayBuilder.optional().build());
-          }
-          else{
+          } else {
             builder.field(fieldName, textArrayBuilder.build());
           }
           break;
-        }
-        else if(metadata.getColumnTypeName(col).equals("_int4")){
+        } else if (metadata.getColumnTypeName(col).equals("_int4")) {
           SchemaBuilder intArrayBuilder = PostgresTypes.IntArrayBuilder();
-          if(optional) {
+          if (optional) {
             builder.field(fieldName, intArrayBuilder.optional().build());
-          }
-          else{
+          } else {
             builder.field(fieldName, intArrayBuilder.build());
           }
           break;
         }
 
-
-        /*if (optional) {
-          builder.field(fieldName, Schema.OPTIONAL_BYTES_SCHEMA);
-        } else {
-          builder.field(fieldName, Schema.BYTES_SCHEMA);
-        }*/
       case Types.JAVA_OBJECT:
       case Types.OTHER:
-        if(metadata.getColumnTypeName(col).equals("jsonb") || metadata.getColumnTypeName(col).equals("json") ){
+        if (metadata.getColumnTypeName(col).equals("jsonb") || metadata.getColumnTypeName(col).equals("json")) {
           SchemaBuilder jsonBuilder = PostgresTypes.JsonbBuilder();
-          if(optional) {
+          if (optional) {
             builder.field(fieldName, jsonBuilder.optional().build());
-          }
-          else{
+          } else {
             builder.field(fieldName, jsonBuilder.build());
           }
           break;
-        }
-        else if(metadata.getColumnTypeName(col).equals("point")){
+        } else if (metadata.getColumnTypeName(col).equals("point")) {
           SchemaBuilder pointBuilder = PostgresTypes.PointBuilder();
-          if(optional) {
+          if (optional) {
             builder.field(fieldName, pointBuilder.optional().build());
-          }
-          else{
+          } else {
             builder.field(fieldName, pointBuilder.build());
           }
           break;
-        }
-        else if(metadata.getColumnTypeName(col).equals("cidr")){
-
+        } else if (metadata.getColumnTypeName(col).equals("cidr")) {
           SchemaBuilder cidrBuilder = PostgresTypes.CidrBuilder();
-          if(optional) {
+          if (optional) {
             builder.field(fieldName, cidrBuilder.optional().build());
-          }
-          else{
+          } else {
             builder.field(fieldName, cidrBuilder.build());
           }
           break;
-        }
-        else if(metadata.getColumnTypeName(col).equals("inet")){
+        } else if (metadata.getColumnTypeName(col).equals("inet")) {
           SchemaBuilder inetBuilder = PostgresTypes.InetBuilder();
-          if(optional) {
+          if (optional) {
             builder.field(fieldName, inetBuilder.optional().build());
-          }
-          else{
+          } else {
             builder.field(fieldName, inetBuilder.build());
           }
           break;
@@ -473,7 +462,7 @@ public class DataConverter {
          * elasticsearch-jdbc plugin for an example of how this is handled
          */
         //colValue = resultSet.getByte(col);
-        colValue =  resultSet.getBoolean(col) ;
+        colValue =  resultSet.getBoolean(col);
 
         break;
       }
@@ -660,8 +649,7 @@ public class DataConverter {
     // be faster than setting this by name?
     try {
       struct.put(fieldName, resultSet.wasNull() ? null : colValue);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
@@ -682,8 +670,7 @@ public class DataConverter {
       case Types.LONGVARCHAR: {
         if (anonymizeKey.endsWith("!")) {
           colValue = "";
-        }
-        else {
+        } else {
           colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
         }
         break;
@@ -694,38 +681,33 @@ public class DataConverter {
       case Types.LONGNVARCHAR: {
         if (anonymizeKey.endsWith("!")) {
           colValue = "";
-        }
-        else {
+        } else {
           colValue = (String) transformerClass.transform(colType, resultSet.getNString(col), null);
         }
         break;
       }
 
       case Types.ARRAY:
-        if(resultSet.getMetaData().getColumnTypeName(col).equals("_text")) {
+        if (resultSet.getMetaData().getColumnTypeName(col).equals("_text")) {
           if (anonymizeKey.endsWith("!")) {
             colValue = "{}";
-          }
-          else {
+          } else {
             colValue = (String) transformerClass.transform(colType, resultSet.getString(col), null);
           }
-        }
-        else {
+        } else {
           colValue = resultSet.getString(col);
         }
         break;
 
       case Types.OTHER:
-        if(columnTypeName.equals("jsonb")) {
+        if (columnTypeName.equals("jsonb")) {
           if (anonymizeKey.endsWith("!")) {
             colValue = "{}";
-          }
-          else {
+          } else {
             colValue = (String) transformerClass.transform(colType, resultSet.getString(col), new String[]{anonymizeKey});
           }
           break;
-        }
-        else {
+        } else {
           colValue = resultSet.getString(col);
         }
       default: {

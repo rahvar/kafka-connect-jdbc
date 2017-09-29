@@ -67,11 +67,11 @@ public class BufferedRecords {
       List<String> tablePkFields =  config.pkFields;
       try {
         tablePkFields = config.getList(tableName + ".pk.fields");
-      }catch (Exception e){
+      } catch (Exception e) {
       }
 
       JdbcSinkConfig.InsertMode tableInsertMode = config.insertMode;
-      fieldsMetadata = FieldsMetadata.extract(tableName,config.pkMode, tablePkFields, config.fieldsWhitelist, currentSchemaPair);
+      fieldsMetadata = FieldsMetadata.extract(tableName, config.pkMode, tablePkFields, config.fieldsWhitelist, currentSchemaPair);
       dbStructure.createOrAmendIfNecessary(config, connection, tableName, fieldsMetadata);
       final String insertSql = getInsertSql();
       close();
@@ -114,11 +114,9 @@ public class BufferedRecords {
         }
         totalUpdateCount += updateCount;
       }
-    }
-    catch (SQLException e) {
+    } catch (SQLException e) {
       e.getNextException().printStackTrace();
-    }
-    catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
     }
 

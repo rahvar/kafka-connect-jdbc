@@ -24,8 +24,13 @@ import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
 
 import java.nio.ByteBuffer;
-import java.sql.*;
-import java.util.*;
+//import java.sql.*;
+import java.util.Map;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+
 
 import javax.xml.bind.DatatypeConverter;
 

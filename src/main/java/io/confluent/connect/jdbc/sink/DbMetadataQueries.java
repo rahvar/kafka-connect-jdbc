@@ -62,7 +62,7 @@ public abstract class DbMetadataQueries {
     final String tableNameForQuery = product.equalsIgnoreCase("oracle") ? tableName.toUpperCase() : tableName;
 
     //log.info("Querying column metadata for product:{} schema:{} catalog:{} table:{}", product, schema, catalog, tableNameForQuery);
-    log.info("Querying column metadata for table:{}",tableNameForQuery);
+    log.info("Querying column metadata for table:{}", tableNameForQuery);
 
 
     final Set<String> pkColumns = new HashSet<>();
