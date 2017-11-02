@@ -7,7 +7,7 @@ Documentation for this connector can be found [here](http://docs.confluent.io/cu
 
 # Enhancements
 Original project can be found [here](https://github.com/confluentinc/kafka-connect-jdbc).
-The enhacements made in this fork are primarily for Postgres. They are as follows: 
+The enhancements made in this fork are primarily for Postgres. They are as follows: 
 ## Data Anonymization 
 Added support for anonymizing data at a column specific level for any database table. SHA-256 encryption is used for anonymization. Columns with the following data types are supported - Text, TextArray, Json. To anonymize a column add the following in the SourceConnector configuration. <br /> `<table-name>.anonymize.column.name = <column-name>`.
 
